@@ -1,2 +1,3 @@
-# gocouch
-Tideland Go CouchDB Client
+# Tideland Go CouchDB Client
+
+**WiP**
