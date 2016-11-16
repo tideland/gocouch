@@ -20,24 +20,34 @@ import (
 )
 
 //--------------------
+// CONSTANTS
+//--------------------
+
+const (
+	methGet  = "GET"
+	methPost = "POST"
+)
+
+//--------------------
 // REQUEST
 //--------------------
 
+// request is responsible for an individual request to a CouchDB.
 type request struct {
-	url *url.URL
-	method string
-	doc interface{}
+	url       *url.URL
+	method    string
+	doc       interface{}
 	docReader io.Reader
-	header *http.Header
+	header    *http.Header
 }
 
 // newRequest creates a new request for the given location, method, and path. If needed
 // query and header can be added like newRequest().setQuery().setHeader.do().
 func newRequest(url *url.URL, method, path string, doc interface{}) *request {
 	req := &request{
-		url: url,
+		url:    url,
 		method: method,
-		doc: doc,
+		doc:    doc,
 	}
 	req.url.Path = path
 	return req
@@ -54,6 +64,7 @@ func (req *request) setHeader(header *http.Header) *request {
 	req.header = header
 	return req
 }
+
 // do performs a request.
 func (req *request) do() (*response, error) {
 	// Marshal a potential document.

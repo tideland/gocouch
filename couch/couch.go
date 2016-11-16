@@ -303,22 +303,6 @@ func (c *Client) DocPath(id string) string {
 	return c.DBPath() + "/" + id
 }
 
-func (c *Client) HandleResponse(resp *http.Response, result interface{}) (code int, err error) {
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	code = resp.StatusCode
-	if err = c.HandleResponseError(code, body); err != nil {
-		return code, err
-	}
-	if err = json.Unmarshal(body, result); err != nil {
-		return 0, err
-	}
-	return
-}
-
 func (c *Client) execJSON(method string, path string, result interface{}, doc interface{}, values *url.Values, headers *http.Header) (int, error) {
 	resBytes, code, err := c.execRead(method, path, doc, values, headers)
 	if err != nil {

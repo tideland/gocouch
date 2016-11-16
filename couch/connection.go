@@ -20,19 +20,59 @@ import (
 //--------------------
 
 type Connection interface {
+	// AllDatabases returns a list of all databases
+	// of the connected server.
+	AllDatabases() ([]string, error)
 
 }
 
+// connection implements Connection.
 type connection struct {
-	location *url.URL
+	url *url.URL
 }
 
-func Open(location *url.URL) (Connection, error) {
+// Open returns a connection to a CouchDB server. If the
+// database name is part of the URL that database will
+// be used.
+func Open(url *url.URL) (Connection, error) {
 	conn := &connection{
-		location: location,
+		url: url,
 	}
 	return conn, nil
 }
 
+// AllDatabases implements connection.
+func (conn *connection) AllDatabases() ([]string, error) {
+	req := newRequest(conn.url, methGet, "/_all_dbs", nil)
+	resp, err := req.do()
+	if err != nil {
+		return nil, err
+	}
+	res := []string{}
+	err = resp.ResultValue(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *Client) CreateDB() (resp *Response, code int, err error) {
+	req, err := c.NewRequest("PUT", c.UrlString(c.DBPath(), nil), nil, nil)
+	if err != nil {
+		return
+	}
+
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	code, err = c.HandleResponse(httpResp, &resp)
+	if err != nil {
+		return
+	}
+
+	return
+}
 
 // EOF

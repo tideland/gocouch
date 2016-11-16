@@ -17,77 +17,6 @@ import (
 )
 
 //--------------------
-// RESPONSE
-//--------------------
-
-// Response contains the server response.
-type Response interface {
-	// Result returns the received document of a client
-	// request and unmorshals it.
-	Result(value interface{})  error
-
-	// Error return a possible error of a request.
-	Error() error
-}
-
-// response implements the Response interface.
-type response struct {
-	statusCode int
-	doc        []byte
-}
-
-// newResponse analyzes the HTTP response and creates a the
-// client response type out of it.
-func newResponse(httpResp *http.Response) (*response, error) {
-	defer httpResp.Body.Close()
-	doc, err := ioutil.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, errors.Annotate(err, ErrReadingResponse, errorMessages)
-	}
-	resp := &response{
-		statusCode: resp.StatusCode,
-		doc:        doc,
-	}
-	resp, nil
-}
-
-// Result implements the Response interface.
-func (resp *response) Result(value interface{}) error {
-	err := json.Unmarshal(resp.doc, value)
-	if err != nil {
-		return errors.Annotate(err, ErrUnmarshallingResult, errorMessages)
-	}
-	return nil
-}
-
-// Error implements the Response interface.
-func (resp *response) Error() error {
-	if resp.statusCode < 200 || resp.statusCode > 299 {
-		crd, err := parseResponseDocument(resp.doc)
-		if err != nil {
-			return err
-		}
-		return errors.New(ErrClientRequest, errorMessages, resp.statusCode, crs.Error, crd.Reason)
-	}
-	return nil
-}
-
-// ID implements the Response interface.
-func (r *response) ID() string {
-	return r.id
-}
-
-// Revision implements the Response interface.
-func (r *response) Revision() string {
-	return r.revision
-}
-
-// Error implements the Response interface.
-func (r *response) Error() error {
-	return r.err
-}
-
-//--------------------
 // COUCHDB RESPONSE DOCUMENT
 //--------------------
 
@@ -107,6 +36,86 @@ func parseResponseDocument(doc []byte) (*couchResponseDoc, error) {
 		return nil, errors.Annotate(err, ErrUnmarshallingResponseDoc, errorMessages)
 	}
 	return &crd, nil
+}
+
+//--------------------
+// RESPONSE
+//--------------------
+
+// Response contains the server response.
+type Response interface {
+	// IsOK checks the status code if the response is okay.
+	IsOK() bool
+
+	// Error return a possible error of a request.
+	Error() error
+
+	// ResultValue returns the received document of a client
+	// request and unmorshals it.
+	ResultValue(value interface{})  error
+
+	// ResultData returns the received data of a client
+	// request.
+	ResultData() ([]byte, error)
+}
+
+// response implements the Response interface.
+type response struct {
+	statusCode int
+	body        []byte
+	crd        *couchResponseDoc
+}
+
+// newResponse analyzes the HTTP response and creates a the
+// client response type out of it.
+func newResponse(httpResp *http.Response) (*response, error) {
+	defer httpResp.Body.Close()
+	body, err := ioutil.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, errors.Annotate(err, ErrReadingResponse, errorMessages)
+	}
+	resp := &response{
+		statusCode: resp.StatusCode,
+		body:        body,
+	}
+	return resp, nil
+}
+
+// IsOK implements the Response interface.
+func (resp *response) IsOK() bool {
+	return resp.statusCode >= 200 && resp.statusCode <= 299
+}
+
+// Error implements the Response interface.
+func (resp *response) Error() error {
+	if !resp.IsOK() {
+		crd, err := parseResponseDocument(resp.doc)
+		if err != nil {
+			return err
+		}
+		return errors.New(ErrClientRequest, errorMessages, resp.statusCode, crs.Error, crd.Reason)
+	}
+	return nil
+}
+
+// ResultValue implements the Response interface.
+func (resp *response) ResultValue(value interface{}) error {
+	if !resp.IsOK() {
+		return resp.Error()
+	}
+	err := json.Unmarshal(resp.body, value)
+	if err != nil {
+		return errors.Annotate(err, ErrUnmarshallingResult, errorMessages)
+	}
+	return nil
+}
+
+// ResultData implements the Response interface.
+func (resp *response) ResultData() ([]byte, error) {
+	if !resp.IsOK() {
+		return nil, resp.Error()
+	}
+	return resp.body, nil
 }
 
 // EOF
