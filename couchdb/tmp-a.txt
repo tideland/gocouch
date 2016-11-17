@@ -1,71 +1,8 @@
-// Tideland Go CouchDB Client - Couch
-//
-// Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
-//
-// All rights reserved. Use of this source code is governed
-// by the new BSD license.
-
-package couch
-
-//--------------------
-// IMPORTS
-//--------------------
-
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-)
-
-//--------------------
-// GLOBAL
-//--------------------
 
 type Client struct {
 	URL *url.URL
 }
 
-func NewClient(u *url.URL) *Client {
-	return &Client{u}
-}
-
-func NewClientURL(urlString string) (*Client, error) {
-	u, err := url.Parse(urlString)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{u}, nil
-}
-
-func (c *Client) AllDBs() ([]string, error) {
-	res := []string{}
-	_, err := c.execJSON("GET", "/_all_dbs", &res, nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func (c *Client) AllDocs() (ids []string, err error) {
-	doc := make(map[string]interface{})
-	if _, err = c.execJSON("GET", c.DocPath("_all_docs"), &doc, nil, nil, nil); err != nil {
-		return
-	}
-	if	obj, found:=doc["rows"]; found {
-		ids = make([]string, 0)
-		rows := obj.([]interface{})
-		for i := range rows {
-			row := rows[i].(map[string]interface{})
-			id := row["id"].(string)
-			ids = append(ids, id)
-		}
-	}
-	return
-}
 
 // TODO
 //func (c *Client) AllDesignDocs() {
