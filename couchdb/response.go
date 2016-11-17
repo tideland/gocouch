@@ -33,7 +33,7 @@ type Response interface {
 
 	// ResultValue returns the received document of a client
 	// request and unmorshals it.
-	ResultValue(value interface{})  error
+	ResultValue(value interface{}) error
 
 	// ResultData returns the received data of a client
 	// request.
@@ -51,7 +51,7 @@ type response struct {
 func newResponse(httpResp *http.Response, err error) *response {
 	resp := &response{
 		httpResp: httpResp,
-		err: err,
+		err:      err,
 	}
 	return resp
 }

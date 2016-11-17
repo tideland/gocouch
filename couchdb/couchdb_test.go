@@ -83,4 +83,40 @@ func TestCreateDeleteDatabase(t *testing.T) {
 	assert.Equal(len(ids), dbNo)
 }
 
+// TestCreateDocumentID tests creating new documents.
+func TestCreateDocumentID(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase(assert)
+
+	doc := DocWithoutID{
+		FieldA: "foo",
+		FieldB: 4711,
+	}
+	resp := cdb.CreateDocumentID("foo-a", doc)
+	assert.True(resp.IsOK())
+}
+
+//--------------------
+// HELPERS
+//--------------------
+
+// DocWithoutID is for document tests without an ID.
+type DocWithoutID struct {
+	FieldA string
+	FieldB int
+}
+
+// prepareDatabase opens the database deletes a potention test
+// database and creates it newly.
+func prepareDatabase(assert audit.Assertion) couchdb.CouchDB {
+	cfg, err := etc.ReadString(TestingDBCfg)
+	assert.Nil(err)
+	cdb, err := couchdb.Open(cfg)
+	assert.Nil(err)
+	resp := cdb.DeleteDatabase()
+	resp = cdb.CreateDatabase()
+	assert.True(resp.IsOK())
+	return cdb
+}
+
 // EOF

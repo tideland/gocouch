@@ -26,9 +26,9 @@ import (
 //--------------------
 
 const (
-	methGet  = "GET"
-	methPut  = "PUT"
-	methPost = "POST"
+	methGet    = "GET"
+	methPut    = "PUT"
+	methPost   = "POST"
 	methDelete = "DELETE"
 )
 

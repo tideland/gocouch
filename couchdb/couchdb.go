@@ -41,6 +41,9 @@ type CouchDB interface {
 	// AllDocuments returns a list of all document IDs
 	// of the configured database.
 	AllDocuments() ([]string, error)
+
+	// CreateDocumentID creates a new document with a given ID.
+	CreateDocumentID(id string, doc interface{}) Response
 }
 
 // couchdb implements CouchDB.
@@ -129,6 +132,12 @@ func (db *couchdb) AllDocuments() ([]string, error) {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil
+}
+
+// CreateDocumentID implements the CouchDB interface.
+func (db *couchdb) CreateDocumentID(id string, doc interface{}) Response {
+	req := newRequest(db, db.databasePath(id), doc)
+	return req.put()
 }
 
 // databasePath creates a path containing the passed
