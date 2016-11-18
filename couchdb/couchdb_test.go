@@ -12,6 +12,7 @@ package couchdb_test
 //--------------------
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/tideland/golib/audit"
@@ -88,12 +89,33 @@ func TestCreateDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
-	doc := DocWithoutID{
+	docA := DocWithoutID{
 		FieldA: "foo",
 		FieldB: 4711,
 	}
-	resp := cdb.CreateDocument(doc)
+	resp := cdb.CreateDocument(docA)
 	assert.True(resp.IsOK())
+	id := resp.ID()
+	assert.Match(id, "[0-9a-f]{32}")
+
+	docB := DocWithID{
+		Identificator: "bar-12345",
+		FieldA:        "bar",
+		FieldB:        12345,
+	}
+	resp = cdb.CreateDocument(docB)
+	assert.True(resp.IsOK())
+	id = resp.ID()
+	assert.Equal(id, "bar-12345")
+
+	docC := &IdentifiableDoc{
+		FieldA: "yadda",
+		FieldB: 54321,
+	}
+	resp = cdb.CreateDocument(docC)
+	assert.True(resp.IsOK())
+	id = resp.ID()
+	assert.Equal(id, "yadda-54321")
 }
 
 //--------------------
@@ -104,6 +126,29 @@ func TestCreateDocument(t *testing.T) {
 type DocWithoutID struct {
 	FieldA string
 	FieldB int
+}
+
+// DocWithUD is for document tests with an ID.
+type DocWithID struct {
+	Identificator string `json:"_id"`
+	FieldA        string
+	FieldB        int
+}
+
+// IdentifiableDoc is for document tests with the Identifiable
+// intterface.
+type IdentifiableDoc struct {
+	revision string
+	FieldA   string
+	FieldB   int
+}
+
+func (d *IdentifiableDoc) DocumentID() string {
+	return fmt.Sprintf("%s-%d", d.FieldA, d.FieldB)
+}
+
+func (d *IdentifiableDoc) DocumentRevision() string {
+	return d.revision
 }
 
 // prepareDatabase opens the database deletes a potention test

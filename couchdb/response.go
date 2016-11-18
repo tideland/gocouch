@@ -32,10 +32,10 @@ type Response interface {
 	Error() error
 
 	// ID returns a potentially returned document identifier.
-	ID() (string, error)
+	ID() string
 
 	// Revision returns a potentially returned document revision.
-	Revision() (string, error)
+	Revision() string
 
 	// ResultValue returns the received document of a client
 	// request and unmorshals it.
@@ -83,25 +83,25 @@ func (resp *response) Error() error {
 }
 
 // ID implements the Response interface.
-func (resp *response) ID() (string, error) {
+func (resp *response) ID() string {
 	if !resp.IsOK() {
-		return "", resp.Error()
+		return ""
 	}
 	if err := resp.readCouchDBResponse(); err != nil {
-		return "", err
+		return ""
 	}
-	return resp.cdbResp.ID, nil
+	return resp.cdbResp.ID
 }
 
 // Revision implements the Response interface.
-func (resp *response) Revision() (string, error) {
+func (resp *response) Revision() string {
 	if !resp.IsOK() {
-		return "", resp.Error()
+		return ""
 	}
 	if err := resp.readCouchDBResponse(); err != nil {
-		return "", err
+		return ""
 	}
-	return resp.cdbResp.Revision, nil
+	return resp.cdbResp.Revision
 }
 
 // ResultValue implements the Response interface.

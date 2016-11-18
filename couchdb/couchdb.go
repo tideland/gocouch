@@ -12,8 +12,8 @@ package couchdb
 //--------------------
 
 import (
+	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/tideland/golib/errors"
@@ -60,7 +60,7 @@ type CouchDB interface {
 	AllDocuments() ([]string, error)
 
 	// CreateDocument creates a new document.
-	CreateDocumentID(doc interface{}) Response
+	CreateDocument(doc interface{}) Response
 }
 
 // couchdb implements CouchDB.
@@ -153,12 +153,12 @@ func (db *couchdb) AllDocuments() ([]string, error) {
 
 // CreateDocument implements the CouchDB interface.
 func (db *couchdb) CreateDocument(doc interface{}) Response {
-	id, revision, err := db.idAndRevision(doc)
+	id, _, err := db.idAndRevision(doc)
 	if err != nil {
 		return newResponse(nil, err)
 	}
 	if id == "" {
-		id = identifiers.NewUUID().ShortString()
+		id = identifier.NewUUID().ShortString()
 	}
 	req := newRequest(db, db.databasePath(id), doc)
 	return req.put()
