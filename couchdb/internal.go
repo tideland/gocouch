@@ -19,11 +19,11 @@ import ()
 
 // couchdbResponse contains response information CouchDB returns.
 type couchdbResponse struct {
-	OK     bool   `json:"ok"`
-	ID     string `json:"_id"`
-	Rev    string `json:"_rev"`
-	Error  string `json:"error"`
-	Reason string `json:"reason"`
+	OK       bool   `json:"ok"`
+	ID       string `json:"id"`
+	Revision string `json:"rev"`
+	Error    string `json:"error"`
+	Reason   string `json:"reason"`
 }
 
 // couchdbViewResult is a generic result of a CouchDB view.
@@ -36,6 +36,13 @@ type couchdbViewResult struct {
 		Value    interface{} `json:"value"`
 		Document interface{} `json:"doc"`
 	} `json:"rows"`
+}
+
+// idAndRevision is used to simply retrieve ID and revision of
+// a document.
+type idAndRevision struct {
+	ID       string `json:"_id"`
+	Revision string `json:"_rev"`
 }
 
 // EOF

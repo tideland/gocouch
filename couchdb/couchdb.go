@@ -13,16 +13,33 @@ package couchdb
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
+	"github.com/tideland/golib/identifier"
 )
+
+//--------------------
+// DOCUMENT INTERFACES
+//--------------------
+
+// Identifiable are document type which can provide their
+// document identifier and revision.
+type Identifiable interface {
+	// DocumentID returns the identifier of the document.
+	DocumentID() string
+
+	// Document revision returns the revision of the document.
+	DocumentRevision() string
+}
 
 //--------------------
 // COUCHDB
 //--------------------
 
+// CouchDB provides the access to a database.
 type CouchDB interface {
 	// AllDatabases returns a list of all database IDs
 	// of the connected server.
@@ -42,8 +59,8 @@ type CouchDB interface {
 	// of the configured database.
 	AllDocuments() ([]string, error)
 
-	// CreateDocumentID creates a new document with a given ID.
-	CreateDocumentID(id string, doc interface{}) Response
+	// CreateDocument creates a new document.
+	CreateDocumentID(doc interface{}) Response
 }
 
 // couchdb implements CouchDB.
@@ -134,8 +151,15 @@ func (db *couchdb) AllDocuments() ([]string, error) {
 	return ids, nil
 }
 
-// CreateDocumentID implements the CouchDB interface.
-func (db *couchdb) CreateDocumentID(id string, doc interface{}) Response {
+// CreateDocument implements the CouchDB interface.
+func (db *couchdb) CreateDocument(doc interface{}) Response {
+	id, revision, err := db.idAndRevision(doc)
+	if err != nil {
+		return newResponse(nil, err)
+	}
+	if id == "" {
+		id = identifiers.NewUUID().ShortString()
+	}
 	req := newRequest(db, db.databasePath(id), doc)
 	return req.put()
 }
@@ -145,6 +169,28 @@ func (db *couchdb) CreateDocumentID(id string, doc interface{}) Response {
 func (db *couchdb) databasePath(parts ...string) string {
 	fullParts := append([]string{db.database}, parts...)
 	return "/" + strings.Join(fullParts, "/")
+}
+
+// idAndRevision retrieves the ID and the revision of the
+// passed document.
+func (db *couchdb) idAndRevision(doc interface{}) (string, string, error) {
+	// Can the type provide it by itself?
+	if identifiable, ok := doc.(Identifiable); ok {
+		return identifiable.DocumentID(), identifiable.DocumentRevision(), nil
+	}
+	// OK, use marshalling.
+	marshalled, err := json.Marshal(doc)
+	if err != nil {
+		return "", "", errors.Annotate(err, ErrMarshallingDoc, errorMessages)
+	}
+	iar := &struct {
+		ID       string `json:"_id"`
+		Revision string `json:"_rev"`
+	}{}
+	if err = json.Unmarshal(marshalled, iar); err != nil {
+		return "", "", errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
+	}
+	return iar.ID, iar.Revision, nil
 }
 
 // EOF

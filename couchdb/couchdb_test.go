@@ -83,8 +83,8 @@ func TestCreateDeleteDatabase(t *testing.T) {
 	assert.Equal(len(ids), dbNo)
 }
 
-// TestCreateDocumentID tests creating new documents.
-func TestCreateDocumentID(t *testing.T) {
+// TestCreateDocument tests creating new documents.
+func TestCreateDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
@@ -92,7 +92,7 @@ func TestCreateDocumentID(t *testing.T) {
 		FieldA: "foo",
 		FieldB: 4711,
 	}
-	resp := cdb.CreateDocumentID("foo-a", doc)
+	resp := cdb.CreateDocument(doc)
 	assert.True(resp.IsOK())
 }
 

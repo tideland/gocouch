@@ -31,6 +31,12 @@ type Response interface {
 	// Error return a possible error of a request.
 	Error() error
 
+	// ID returns a potentially returned document identifier.
+	ID() (string, error)
+
+	// Revision returns a potentially returned document revision.
+	Revision() (string, error)
+
 	// ResultValue returns the received document of a client
 	// request and unmorshals it.
 	ResultValue(value interface{}) error
@@ -43,6 +49,7 @@ type Response interface {
 // response implements the Response interface.
 type response struct {
 	httpResp *http.Response
+	cdbResp  *couchdbResponse
 	err      error
 }
 
@@ -69,12 +76,32 @@ func (resp *response) Error() error {
 	if resp.err != nil {
 		return resp.err
 	}
-	cr := couchdbResponse{}
-	err := resp.ResultValue(&cr)
-	if err != nil {
+	if err := resp.readCouchDBResponse(); err != nil {
 		return err
 	}
-	return errors.New(ErrClientRequest, errorMessages, resp.httpResp.StatusCode, cr.Error, cr.Reason)
+	return errors.New(ErrClientRequest, errorMessages, resp.httpResp.StatusCode, resp.cdbResp.Error, resp.cdbResp.Reason)
+}
+
+// ID implements the Response interface.
+func (resp *response) ID() (string, error) {
+	if !resp.IsOK() {
+		return "", resp.Error()
+	}
+	if err := resp.readCouchDBResponse(); err != nil {
+		return "", err
+	}
+	return resp.cdbResp.ID, nil
+}
+
+// Revision implements the Response interface.
+func (resp *response) Revision() (string, error) {
+	if !resp.IsOK() {
+		return "", resp.Error()
+	}
+	if err := resp.readCouchDBResponse(); err != nil {
+		return "", err
+	}
+	return resp.cdbResp.Revision, nil
 }
 
 // ResultValue implements the Response interface.
@@ -101,6 +128,17 @@ func (resp *response) ResultData() ([]byte, error) {
 		return nil, errors.Annotate(err, ErrReadingResponseBody, errorMessages)
 	}
 	return body, nil
+}
+
+// readCouchDBResponse lazily loads the internal response of
+// the CouchDB.
+func (resp *response) readCouchDBResponse() error {
+	if resp.cdbResp == nil {
+		if err := resp.ResultValue(&resp.cdbResp); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // EOF
