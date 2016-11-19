@@ -118,6 +118,31 @@ func TestCreateDocument(t *testing.T) {
 	assert.Equal(id, "yadda-54321")
 }
 
+// TestReadDocument tests reading new documents.
+func TestReadDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase(assert)
+
+	docA := DocWithID{
+		Identificator: "foo-12345",
+		FieldA:        "foo",
+		FieldB:        12345,
+	}
+	resp := cdb.CreateDocument(docA)
+	assert.True(resp.IsOK())
+	id := resp.ID()
+	assert.Equal(id, "foo-12345")
+
+	resp = cdb.ReadDocument(id)
+	assert.True(resp.IsOK())
+	docB := DocWithID{}
+	err := resp.ResultValue(&docB)
+	assert.Nil(err)
+	assert.Equal(docB.Identificator, docA.Identificator)
+	assert.Equal(docB.FieldA, docA.FieldA)
+	assert.Equal(docB.FieldB, docA.FieldB)
+}
+
 //--------------------
 // HELPERS
 //--------------------

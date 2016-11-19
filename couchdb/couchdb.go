@@ -61,6 +61,9 @@ type CouchDB interface {
 
 	// CreateDocument creates a new document.
 	CreateDocument(doc interface{}) Response
+
+	// ReadDocument creates a new document.
+	ReadDocument(id string) Response
 }
 
 // couchdb implements CouchDB.
@@ -162,6 +165,12 @@ func (db *couchdb) CreateDocument(doc interface{}) Response {
 	}
 	req := newRequest(db, db.databasePath(id), doc)
 	return req.put()
+}
+
+// ReadDocument implements the CouchDB interface.
+func (db *couchdb) ReadDocument(id string) Response {
+	req := newRequest(db, db.databasePath(id), nil)
+	return req.get()
 }
 
 // databasePath creates a path containing the passed
