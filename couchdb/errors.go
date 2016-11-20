@@ -21,6 +21,7 @@ import (
 
 const (
 	ErrNoConfiguration = iota + 1
+	ErrNoIdentifier
 	ErrMarshallingDoc
 	ErrPreparingRequest
 	ErrPerformingRequest
@@ -31,10 +32,11 @@ const (
 
 var errorMessages = errors.Messages{
 	ErrNoConfiguration:     "cannot open database without configuration",
+	ErrNoIdentifier:        "document contains no identifier",
 	ErrMarshallingDoc:      "cannot marshal into database document",
 	ErrPreparingRequest:    "cannot prepare request",
 	ErrPerformingRequest:   "cannot perform request",
-	ErrClientRequest:       "client request failed; status code %d, error '%s', reason '%s'",
+	ErrClientRequest:       "client request failed: status code %d, error '%s', reason '%s'",
 	ErrUnmarshallingDoc:    "cannot unmarshal database document",
 	ErrReadingResponseBody: "cannot read response body",
 }

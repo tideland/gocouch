@@ -22,20 +22,6 @@ import (
 )
 
 //--------------------
-// DOCUMENT INTERFACES
-//--------------------
-
-// Identifiable are document type which can provide their
-// document identifier and revision.
-type Identifiable interface {
-	// DocumentID returns the identifier of the document.
-	DocumentID() string
-
-	// Document revision returns the revision of the document.
-	DocumentRevision() string
-}
-
-//--------------------
 // COUCHDB
 //--------------------
 
@@ -62,8 +48,15 @@ type CouchDB interface {
 	// CreateDocument creates a new document.
 	CreateDocument(doc interface{}) Response
 
-	// ReadDocument creates a new document.
+	// ReadDocument reads an existing document.
 	ReadDocument(id string) Response
+
+	// UpdateDocument update an existing document.
+	UpdateDocument(doc interface{}) Response
+
+	// DeleteDocument deletes an existing document.
+	DeleteDocument(doc interface{}) Response
+
 }
 
 // couchdb implements CouchDB.
@@ -117,7 +110,7 @@ func (db *couchdb) DeleteDatabase() Response {
 
 // AllDesignDocuments implements the CouchDB interface.
 func (db *couchdb) AllDesignDocuments() ([]string, error) {
-	query := NewQuery().StartEndKey("_design/", "_design0")
+	query := NewQuery().SetStartEndKey("_design/", "_design0")
 	req := newRequest(db, db.databasePath("_all_docs"), nil).setQuery(query)
 	resp := req.get()
 	if !resp.IsOK() {
@@ -173,6 +166,30 @@ func (db *couchdb) ReadDocument(id string) Response {
 	return req.get()
 }
 
+// UpdateDocument implements the CouchDB interface.
+func (db *couchdb) UpdateDocument(doc interface{}) Response {
+	id, _, err := db.idAndRevision(doc)
+	if err != nil {
+		return newResponse(nil, err)
+	}
+	if id == "" {
+		return newResponse(nil, errors.New(ErrNoIdentifier, errorMessages))
+	}
+	req := newRequest(db, db.databasePath(id), doc)
+	return req.put()
+}
+
+// DeleteDocument implements the CouchDB interface.
+func (db *couchdb) DeleteDocument(doc interface{}) Response {
+	id, rev, err := db.idAndRevision(doc)
+	if err != nil {
+		return newResponse(nil, err)
+	}
+	query := NewQuery().SetRevision(rev)
+	req := newRequest(db, db.databasePath(id), nil).setQuery(query)
+	return req.delete()
+}
+
 // databasePath creates a path containing the passed
 // elements based on the path of the database.
 func (db *couchdb) databasePath(parts ...string) string {
@@ -183,23 +200,18 @@ func (db *couchdb) databasePath(parts ...string) string {
 // idAndRevision retrieves the ID and the revision of the
 // passed document.
 func (db *couchdb) idAndRevision(doc interface{}) (string, string, error) {
-	// Can the type provide it by itself?
-	if identifiable, ok := doc.(Identifiable); ok {
-		return identifiable.DocumentID(), identifiable.DocumentRevision(), nil
-	}
-	// OK, use marshalling.
 	marshalled, err := json.Marshal(doc)
 	if err != nil {
 		return "", "", errors.Annotate(err, ErrMarshallingDoc, errorMessages)
 	}
-	iar := &struct {
-		ID       string `json:"_id"`
-		Revision string `json:"_rev"`
+	metadata := &struct{
+		DocumentID string `json:"_id,omitempt"`
+		DocumentRevision string `json:"_rev,omitempty"`
 	}{}
-	if err = json.Unmarshal(marshalled, iar); err != nil {
+	if err = json.Unmarshal(marshalled, metadata); err != nil {
 		return "", "", errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
 	}
-	return iar.ID, iar.Revision, nil
+	return metadata.DocumentID, metadata.DocumentRevision, nil
 }
 
 // EOF

@@ -31,16 +31,23 @@ func NewQuery() *Query {
 	}
 }
 
-// StartEndKey creates startkey and endkey.
-func (q *Query) StartEndKey(start, end string) *Query {
+// SetRevision sets the revision for the access to concrete
+// document revisions.
+func (q *Query) SetRevision(revision string) *Query {
+	q.values.Set("rev", revision)
+	return q
+}
+
+// SetStartEndKey creates startkey and endkey.
+func (q *Query) SetStartEndKey(start, end string) *Query {
 	q.values.Set("startkey", "\""+start+"\"")
 	q.values.Set("endkey", "\""+end+"\"")
 	return q
 }
 
-// IncludeDocuments sets the flag for the including of the
+// SetIncludeDocuments sets the flag for the including of the
 // found documents.
-func (q *Query) IncludeDocuments() *Query {
+func (q *Query) SetIncludeDocuments() *Query {
 	q.values.Set("include_docs", "true")
 	return q
 }

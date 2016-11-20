@@ -12,7 +12,6 @@ package couchdb_test
 //--------------------
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/tideland/golib/audit"
@@ -89,7 +88,7 @@ func TestCreateDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
-	docA := DocWithoutID{
+	docA := MyDocument{
 		FieldA: "foo",
 		FieldB: 4711,
 	}
@@ -98,35 +97,26 @@ func TestCreateDocument(t *testing.T) {
 	id := resp.ID()
 	assert.Match(id, "[0-9a-f]{32}")
 
-	docB := DocWithID{
-		Identificator: "bar-12345",
-		FieldA:        "bar",
-		FieldB:        12345,
+	docB := MyDocument{
+		DocumentID: "bar-12345",
+		FieldA:     "bar",
+		FieldB:     12345,
 	}
 	resp = cdb.CreateDocument(docB)
 	assert.True(resp.IsOK())
 	id = resp.ID()
 	assert.Equal(id, "bar-12345")
-
-	docC := &IdentifiableDoc{
-		FieldA: "yadda",
-		FieldB: 54321,
-	}
-	resp = cdb.CreateDocument(docC)
-	assert.True(resp.IsOK())
-	id = resp.ID()
-	assert.Equal(id, "yadda-54321")
 }
 
-// TestReadDocument tests reading new documents.
+// TestReadDocument tests reading a document.
 func TestReadDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
-	docA := DocWithID{
-		Identificator: "foo-12345",
-		FieldA:        "foo",
-		FieldB:        12345,
+	docA := MyDocument{
+		DocumentID: "foo-12345",
+		FieldA:     "foo",
+		FieldB:     12345,
 	}
 	resp := cdb.CreateDocument(docA)
 	assert.True(resp.IsOK())
@@ -135,45 +125,94 @@ func TestReadDocument(t *testing.T) {
 
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
-	docB := DocWithID{}
+	docB := MyDocument{}
 	err := resp.ResultValue(&docB)
 	assert.Nil(err)
-	assert.Equal(docB.Identificator, docA.Identificator)
+	assert.Equal(docB.DocumentID, docA.DocumentID)
 	assert.Equal(docB.FieldA, docA.FieldA)
 	assert.Equal(docB.FieldB, docA.FieldB)
+
+	resp = cdb.ReadDocument("i-do-not-exist")
+	assert.False(resp.IsOK())
+	assert.ErrorMatch(resp.Error(), ".* 404,.*")
+}
+
+// TestUpdateDocument tests updating documents.
+func TestUpdateDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase(assert)
+
+	docA := MyDocument{
+		DocumentID: "foo-12345",
+		FieldA:     "foo",
+		FieldB:     12345,
+	}
+	resp := cdb.CreateDocument(docA)
+	assert.True(resp.IsOK())
+	id := resp.ID()
+	assert.Equal(id, "foo-12345")
+
+	resp = cdb.ReadDocument(id)
+	assert.True(resp.IsOK())
+	docB := MyDocument{}
+	err := resp.ResultValue(&docB)
+	assert.Nil(err)
+
+	docB.FieldB = 54321
+
+	resp = cdb.UpdateDocument(docB)
+	assert.True(resp.IsOK())
+
+	resp = cdb.ReadDocument(id)
+	assert.True(resp.IsOK())
+	docC := MyDocument{}
+	err = resp.ResultValue(&docC)
+	assert.Nil(err)
+	assert.Equal(docC.DocumentID, docB.DocumentID)
+	assert.Equal(docC.FieldA, docB.FieldA)
+	assert.Equal(docC.FieldB, docB.FieldB)
+}
+
+// TestDeleteDocument tests deleting a document.
+func TestDeleteDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase(assert)
+
+	docA := MyDocument{
+		DocumentID: "foo-12345",
+		FieldA:     "foo",
+		FieldB:     12345,
+	}
+	resp := cdb.CreateDocument(docA)
+	assert.True(resp.IsOK())
+	id := resp.ID()
+	assert.Equal(id, "foo-12345")
+
+	resp = cdb.ReadDocument(id)
+	assert.True(resp.IsOK())
+	docB := MyDocument{}
+	err := resp.ResultValue(&docB)
+	assert.Nil(err)
+
+	resp = cdb.DeleteDocument(docB)
+	assert.True(resp.IsOK())
+
+	resp = cdb.ReadDocument(id)
+	assert.False(resp.IsOK())
+	assert.ErrorMatch(resp.Error(), ".* 404,.*")
 }
 
 //--------------------
 // HELPERS
 //--------------------
 
-// DocWithoutID is for document tests without an ID.
-type DocWithoutID struct {
+// MyDocument is used for the tests.
+type MyDocument struct {
+	DocumentID       string `json:"_id,omitempty"`
+	DocumentRevision string `json:"_rev,omitempty"`
+
 	FieldA string
 	FieldB int
-}
-
-// DocWithUD is for document tests with an ID.
-type DocWithID struct {
-	Identificator string `json:"_id"`
-	FieldA        string
-	FieldB        int
-}
-
-// IdentifiableDoc is for document tests with the Identifiable
-// intterface.
-type IdentifiableDoc struct {
-	revision string
-	FieldA   string
-	FieldB   int
-}
-
-func (d *IdentifiableDoc) DocumentID() string {
-	return fmt.Sprintf("%s-%d", d.FieldA, d.FieldB)
-}
-
-func (d *IdentifiableDoc) DocumentRevision() string {
-	return d.revision
 }
 
 // prepareDatabase opens the database deletes a potention test
