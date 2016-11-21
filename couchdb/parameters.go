@@ -30,6 +30,13 @@ func Revision(revision string) Parameter {
 	}
 }
 
+// Keys sets a number of keys wanted from a view request.
+func Keys(keys ...interface{}) Parameter {
+	return func(ps *Parameters) {
+		ps.keys = append(ps.keys, keys...)
+	}
+}
+
 // StartEndKey sets the startkey and endkey for view requests.
 func StartEndKey(start, end string) Parameter {
 	return func(ps *Parameters) {
@@ -51,6 +58,7 @@ func SetIncludeDocuments() Parameter {
 
 // Prameters contains different parameters for the requests to a CouchDB.
 type Parameters struct {
+	keys   []interface{}
 	query  url.Values
 	header http.Header
 }
@@ -68,11 +76,14 @@ func (ps *Parameters) apply(req *request, rps ...Parameter) {
 	for _, rp := range rps {
 		rp(ps)
 	}
+	if len(ps.keys) > 0 {
+		req.keys = ps.keys
+	}
 	if len(ps.query) > 0 {
-		req.setQuery(&ps.query)
+		req.query = ps.query
 	}
 	if len(ps.header) > 0 {
-		req.setHeader(&ps.header)
+		req.header = ps.header
 	}
 }
 

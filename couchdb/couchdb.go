@@ -41,6 +41,9 @@ type CouchDB interface {
 	// document IDs of the configured database.
 	AllDesignDocuments() ([]string, error)
 
+	// CreateDesignDocument creates a new design document.
+	CreateDesignDocument(doc *DesignDocument) Response
+
 	// AllDocuments returns a list of all document IDs
 	// of the configured database.
 	AllDocuments() ([]string, error)
@@ -56,6 +59,9 @@ type CouchDB interface {
 
 	// DeleteDocument deletes an existing document.
 	DeleteDocument(doc interface{}, rps ...Parameter) Response
+
+	// ViewDocuments reads the output of a view.
+	ViewDocuments(design, view string, rps ...Parameter) Response
 }
 
 // couchdb implements CouchDB.
@@ -126,6 +132,12 @@ func (db *couchdb) AllDesignDocuments() ([]string, error) {
 	return ids, nil
 }
 
+// CreateDesignDocument implements the CouchDB interface.
+func (db *couchdb) CreateDesignDocument(doc *DesignDocument) Response {
+	req := newRequest(db, db.databasePath(doc.ID), doc)
+	return req.put()
+}
+
 // AllDocuments implements the CouchDB interface.
 func (db *couchdb) AllDocuments() ([]string, error) {
 	req := newRequest(db, db.databasePath("_all_docs"), nil)
@@ -186,6 +198,16 @@ func (db *couchdb) DeleteDocument(doc interface{}, rps ...Parameter) Response {
 	rps = append(rps, Revision(rev))
 	req := newRequest(db, db.databasePath(id), nil)
 	return req.setParameters(rps...).delete()
+}
+
+// ViewDocuments implements the CouchDB interface.
+func (db *couchdb) ViewDocuments(design, view string, rps ...Parameter) Response {
+	req := newRequest(db, db.databasePath("_design", design, "_view", view), nil)
+	req = req.setParameters(rps...)
+	if len(req.keys) > 0 {
+		return req.post()
+	}
+	return req.get()
 }
 
 // databasePath creates a path containing the passed

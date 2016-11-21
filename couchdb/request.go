@@ -42,8 +42,9 @@ type request struct {
 	path      string
 	doc       interface{}
 	docReader io.Reader
-	query     *url.Values
-	header    *http.Header
+	keys      []interface{}
+	query     url.Values
+	header    http.Header
 }
 
 // newRequest creates a new request for the given location, method, and path. If needed
@@ -62,16 +63,6 @@ func (req *request) setParameters(rps ...Parameter) *request {
 	ps := newParameters()
 	ps.apply(req, rps...)
 	return req
-}
-
-// setQuery sets query values.
-func (req *request) setQuery(query *url.Values) {
-	req.query = query
-}
-
-// setHeader sets header values.
-func (req *request) setHeader(header *http.Header) {
-	req.header = header
 }
 
 // get performs a GET request.
@@ -102,8 +93,12 @@ func (req *request) do(method string) *response {
 		Host:   req.db.host,
 		Path:   req.path,
 	}
-	if req.query != nil {
+	if len(req.query) > 0 {
 		u.RawQuery = req.query.Encode()
+	}
+	// Check if keys shall be used for the body.
+	if len(req.keys) > 0 {
+		req.doc = &couchdbViewKeys{Keys: req.keys}
 	}
 	// Marshal a potential document.
 	if req.doc != nil {
@@ -118,8 +113,8 @@ func (req *request) do(method string) *response {
 	if err != nil {
 		return newResponse(nil, errors.Annotate(err, ErrPreparingRequest, errorMessages))
 	}
-	if req.header != nil {
-		httpReq.Header = *req.header
+	if len(req.header) > 0 {
+		httpReq.Header = req.header
 	}
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")

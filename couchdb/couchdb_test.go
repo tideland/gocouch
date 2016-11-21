@@ -12,6 +12,7 @@ package couchdb_test
 //--------------------
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/tideland/golib/audit"
@@ -83,6 +84,43 @@ func TestCreateDeleteDatabase(t *testing.T) {
 	assert.Equal(len(ids), dbNo)
 }
 
+// TestCreateDesignDocument tests creating new design documents.
+func TestCreateDesignDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase(assert)
+
+	// Create design document and check if it has been created.
+	allDesignA, err := cdb.AllDesignDocuments()
+	assert.Nil(err)
+
+	ddocA := &couchdb.DesignDocument{
+		ID: "_design/testing",
+		Views: couchdb.Views{
+			"foo": couchdb.View{
+				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
+			},
+		},
+	}
+	resp := cdb.CreateDesignDocument(ddocA)
+	assert.True(resp.IsOK())
+
+	allDesignB, err := cdb.AllDesignDocuments()
+	assert.Nil(err)
+	assert.Equal(len(allDesignB), len(allDesignA)+1)
+
+	// Now add some test data.
+	gen := audit.NewGenerator(audit.SimpleRand())
+	for i := 0; i < 100; i++ {
+		doc := MyDocument{
+			DocumentID: fmt.Sprintf("%s-%d", gen.Word(), i),
+			FieldA:     gen.Sentence(),
+			FieldB:     gen.Int(1, 999),
+		}
+		resp = cdb.CreateDocument(doc)
+		assert.True(resp.IsOK())
+	}
+}
+
 // TestCreateDocument tests creating new documents.
 func TestCreateDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
@@ -98,7 +136,7 @@ func TestCreateDocument(t *testing.T) {
 	id := resp.ID()
 	assert.Match(id, "[0-9a-f]{32}")
 
-	// create document with ID.
+	// Create document with ID.
 	docB := MyDocument{
 		DocumentID: "bar-12345",
 		FieldA:     "bar",
