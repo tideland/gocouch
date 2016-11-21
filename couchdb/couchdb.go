@@ -120,13 +120,13 @@ func (db *couchdb) AllDesignDocuments() ([]string, error) {
 	if !resp.IsOK() {
 		return nil, resp.Error()
 	}
-	cvr := couchdbViewResult{}
-	err := resp.ResultValue(&cvr)
+	vr := ViewResult{}
+	err := resp.ResultValue(&vr)
 	if err != nil {
 		return nil, err
 	}
 	ids := []string{}
-	for _, row := range cvr.Rows {
+	for _, row := range vr.Rows {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil
@@ -145,13 +145,13 @@ func (db *couchdb) AllDocuments() ([]string, error) {
 	if !resp.IsOK() {
 		return nil, resp.Error()
 	}
-	cvr := couchdbViewResult{}
-	err := resp.ResultValue(&cvr)
+	vr := ViewResult{}
+	err := resp.ResultValue(&vr)
 	if err != nil {
 		return nil, err
 	}
 	ids := []string{}
-	for _, row := range cvr.Rows {
+	for _, row := range vr.Rows {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil

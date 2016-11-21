@@ -47,6 +47,18 @@ type DesignDocument struct {
 	Libraries              interface{}       `json:"libs,omitempty"`
 }
 
+// ViewResult is a generic result of a CouchDB view.
+type ViewResult struct {
+	TotalRows int `json:"total_rows"`
+	Offset    int `json:"offset"`
+	Rows      []struct {
+		ID       string      `json:"id"`
+		Key      interface{} `json:"key"`
+		Value    interface{} `json:"value"`
+		Document interface{} `json:"doc"`
+	} `json:"rows"`
+}
+
 //--------------------
 // INTERNAL DOCUMENT TYPES
 //--------------------
@@ -63,18 +75,6 @@ type couchdbResponse struct {
 // couchdbViewKeys sets key constraints for view requests.
 type couchdbViewKeys struct {
 	Keys []interface{} `json:"keys"`
-}
-
-// couchdbViewResult is a generic result of a CouchDB view.
-type couchdbViewResult struct {
-	TotalRows int `json:"total_rows"`
-	Offset    int `json:"offset"`
-	Rows      []struct {
-		ID       string      `json:"id"`
-		Key      interface{} `json:"key"`
-		Value    interface{} `json:"value"`
-		Document interface{} `json:"doc"`
-	} `json:"rows"`
 }
 
 // idAndRevision is used to simply retrieve ID and revision of

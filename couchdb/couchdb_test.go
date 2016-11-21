@@ -107,6 +107,24 @@ func TestCreateDesignDocument(t *testing.T) {
 	allDesignB, err := cdb.AllDesignDocuments()
 	assert.Nil(err)
 	assert.Equal(len(allDesignB), len(allDesignA)+1)
+}
+
+// TestViewDocuments tests calling a view.
+func TestViewDocuments(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase(assert)
+
+	// Create design document.
+	ddocA := &couchdb.DesignDocument{
+		ID: "_design/testing",
+		Views: couchdb.Views{
+			"aid": couchdb.View{
+				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
+			},
+		},
+	}
+	resp := cdb.CreateDesignDocument(ddocA)
+	assert.True(resp.IsOK())
 
 	// Now add some test data.
 	gen := audit.NewGenerator(audit.SimpleRand())
@@ -119,6 +137,15 @@ func TestCreateDesignDocument(t *testing.T) {
 		resp = cdb.CreateDocument(doc)
 		assert.True(resp.IsOK())
 	}
+
+	// Last but not least call the view.
+	resp = cdb.ViewDocuments("testing", "aid")
+	assert.True(resp.IsOK())
+	vr := couchdb.ViewResult{}
+	err := resp.ResultValue(&vr)
+	assert.Nil(err)
+	assert.True(vr.TotalRows > 0)
+	assert.Equal(vr.Offset, 0)
 }
 
 // TestCreateDocument tests creating new documents.
