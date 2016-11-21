@@ -42,7 +42,7 @@ type request struct {
 	path      string
 	doc       interface{}
 	docReader io.Reader
-	query     *Query
+	query     *url.Values
 	header    *http.Header
 }
 
@@ -57,16 +57,21 @@ func newRequest(db *couchdb, path string, doc interface{}) *request {
 	return req
 }
 
-// setQuery sets query values.
-func (req *request) setQuery(query *Query) *request {
-	req.query = query
+// setParameters applies parameters to a request.
+func (req *request) setParameters(rps ...Parameter) *request {
+	ps := newParameters()
+	ps.apply(req, rps...)
 	return req
 }
 
+// setQuery sets query values.
+func (req *request) setQuery(query *url.Values) {
+	req.query = query
+}
+
 // setHeader sets header values.
-func (req *request) setHeader(header *http.Header) *request {
+func (req *request) setHeader(header *http.Header) {
 	req.header = header
-	return req
 }
 
 // get performs a GET request.

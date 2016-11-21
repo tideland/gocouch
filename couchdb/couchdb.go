@@ -46,17 +46,16 @@ type CouchDB interface {
 	AllDocuments() ([]string, error)
 
 	// CreateDocument creates a new document.
-	CreateDocument(doc interface{}) Response
+	CreateDocument(doc interface{}, rps ...Parameter) Response
 
 	// ReadDocument reads an existing document.
-	ReadDocument(id string) Response
+	ReadDocument(id string, rps ...Parameter) Response
 
 	// UpdateDocument update an existing document.
-	UpdateDocument(doc interface{}) Response
+	UpdateDocument(doc interface{}, rps ...Parameter) Response
 
 	// DeleteDocument deletes an existing document.
-	DeleteDocument(doc interface{}) Response
-
+	DeleteDocument(doc interface{}, rps ...Parameter) Response
 }
 
 // couchdb implements CouchDB.
@@ -110,9 +109,8 @@ func (db *couchdb) DeleteDatabase() Response {
 
 // AllDesignDocuments implements the CouchDB interface.
 func (db *couchdb) AllDesignDocuments() ([]string, error) {
-	query := NewQuery().SetStartEndKey("_design/", "_design0")
-	req := newRequest(db, db.databasePath("_all_docs"), nil).setQuery(query)
-	resp := req.get()
+	req := newRequest(db, db.databasePath("_all_docs"), nil)
+	resp := req.setParameters(StartEndKey("_design/", "_design0")).get()
 	if !resp.IsOK() {
 		return nil, resp.Error()
 	}
@@ -148,7 +146,7 @@ func (db *couchdb) AllDocuments() ([]string, error) {
 }
 
 // CreateDocument implements the CouchDB interface.
-func (db *couchdb) CreateDocument(doc interface{}) Response {
+func (db *couchdb) CreateDocument(doc interface{}, rps ...Parameter) Response {
 	id, _, err := db.idAndRevision(doc)
 	if err != nil {
 		return newResponse(nil, err)
@@ -157,17 +155,17 @@ func (db *couchdb) CreateDocument(doc interface{}) Response {
 		id = identifier.NewUUID().ShortString()
 	}
 	req := newRequest(db, db.databasePath(id), doc)
-	return req.put()
+	return req.setParameters(rps...).put()
 }
 
 // ReadDocument implements the CouchDB interface.
-func (db *couchdb) ReadDocument(id string) Response {
+func (db *couchdb) ReadDocument(id string, rps ...Parameter) Response {
 	req := newRequest(db, db.databasePath(id), nil)
-	return req.get()
+	return req.setParameters(rps...).get()
 }
 
 // UpdateDocument implements the CouchDB interface.
-func (db *couchdb) UpdateDocument(doc interface{}) Response {
+func (db *couchdb) UpdateDocument(doc interface{}, rps ...Parameter) Response {
 	id, _, err := db.idAndRevision(doc)
 	if err != nil {
 		return newResponse(nil, err)
@@ -176,18 +174,18 @@ func (db *couchdb) UpdateDocument(doc interface{}) Response {
 		return newResponse(nil, errors.New(ErrNoIdentifier, errorMessages))
 	}
 	req := newRequest(db, db.databasePath(id), doc)
-	return req.put()
+	return req.setParameters(rps...).put()
 }
 
 // DeleteDocument implements the CouchDB interface.
-func (db *couchdb) DeleteDocument(doc interface{}) Response {
+func (db *couchdb) DeleteDocument(doc interface{}, rps ...Parameter) Response {
 	id, rev, err := db.idAndRevision(doc)
 	if err != nil {
 		return newResponse(nil, err)
 	}
-	query := NewQuery().SetRevision(rev)
-	req := newRequest(db, db.databasePath(id), nil).setQuery(query)
-	return req.delete()
+	rps = append(rps, Revision(rev))
+	req := newRequest(db, db.databasePath(id), nil)
+	return req.setParameters(rps...).delete()
 }
 
 // databasePath creates a path containing the passed
@@ -204,8 +202,8 @@ func (db *couchdb) idAndRevision(doc interface{}) (string, string, error) {
 	if err != nil {
 		return "", "", errors.Annotate(err, ErrMarshallingDoc, errorMessages)
 	}
-	metadata := &struct{
-		DocumentID string `json:"_id,omitempt"`
+	metadata := &struct {
+		DocumentID       string `json:"_id,omitempt"`
 		DocumentRevision string `json:"_rev,omitempty"`
 	}{}
 	if err = json.Unmarshal(marshalled, metadata); err != nil {
