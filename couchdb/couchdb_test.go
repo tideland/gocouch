@@ -88,6 +88,7 @@ func TestCreateDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
+	// Create document without ID.
 	docA := MyDocument{
 		FieldA: "foo",
 		FieldB: 4711,
@@ -97,6 +98,7 @@ func TestCreateDocument(t *testing.T) {
 	id := resp.ID()
 	assert.Match(id, "[0-9a-f]{32}")
 
+	// create document with ID.
 	docB := MyDocument{
 		DocumentID: "bar-12345",
 		FieldA:     "bar",
@@ -113,6 +115,7 @@ func TestReadDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
+	// Create test document.
 	docA := MyDocument{
 		DocumentID: "foo-12345",
 		FieldA:     "foo",
@@ -123,6 +126,7 @@ func TestReadDocument(t *testing.T) {
 	id := resp.ID()
 	assert.Equal(id, "foo-12345")
 
+	// Read test document.
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docB := MyDocument{}
@@ -132,6 +136,7 @@ func TestReadDocument(t *testing.T) {
 	assert.Equal(docB.FieldA, docA.FieldA)
 	assert.Equal(docB.FieldB, docA.FieldB)
 
+	// Try to read non-existant document.
 	resp = cdb.ReadDocument("i-do-not-exist")
 	assert.False(resp.IsOK())
 	assert.ErrorMatch(resp.Error(), ".* 404,.*")
@@ -142,6 +147,7 @@ func TestUpdateDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
+	// Create first revision.
 	docA := MyDocument{
 		DocumentID: "foo-12345",
 		FieldA:     "foo",
@@ -150,6 +156,7 @@ func TestUpdateDocument(t *testing.T) {
 	resp := cdb.CreateDocument(docA)
 	assert.True(resp.IsOK())
 	id := resp.ID()
+	revision := resp.Revision()
 	assert.Equal(id, "foo-12345")
 
 	resp = cdb.ReadDocument(id)
@@ -158,19 +165,31 @@ func TestUpdateDocument(t *testing.T) {
 	err := resp.ResultValue(&docB)
 	assert.Nil(err)
 
+	// Update the document.
 	docB.FieldB = 54321
 
 	resp = cdb.UpdateDocument(docB)
 	assert.True(resp.IsOK())
 
+	// read the updated revision.
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docC := MyDocument{}
 	err = resp.ResultValue(&docC)
 	assert.Nil(err)
 	assert.Equal(docC.DocumentID, docB.DocumentID)
+	assert.Substring("2-", docC.DocumentRevision)
 	assert.Equal(docC.FieldA, docB.FieldA)
 	assert.Equal(docC.FieldB, docB.FieldB)
+
+	// Read the first revision.
+	resp = cdb.ReadDocument(id, couchdb.Revision(revision))
+	assert.True(resp.IsOK())
+	docD := MyDocument{}
+	err = resp.ResultValue(&docD)
+	assert.Nil(err)
+	assert.Equal(docD.DocumentRevision, revision)
+	assert.Equal(docD.FieldB, docA.FieldB)
 }
 
 // TestDeleteDocument tests deleting a document.
@@ -178,6 +197,7 @@ func TestDeleteDocument(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase(assert)
 
+	// Create test document.
 	docA := MyDocument{
 		DocumentID: "foo-12345",
 		FieldA:     "foo",
@@ -188,15 +208,18 @@ func TestDeleteDocument(t *testing.T) {
 	id := resp.ID()
 	assert.Equal(id, "foo-12345")
 
+	// Read test document, we need it including the revision.
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docB := MyDocument{}
 	err := resp.ResultValue(&docB)
 	assert.Nil(err)
 
+	// Delete the test document.
 	resp = cdb.DeleteDocument(docB)
 	assert.True(resp.IsOK())
 
+	// Try to read deleted document.
 	resp = cdb.ReadDocument(id)
 	assert.False(resp.IsOK())
 	assert.ErrorMatch(resp.Error(), ".* 404,.*")
