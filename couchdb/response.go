@@ -49,7 +49,7 @@ type Response interface {
 // response implements the Response interface.
 type response struct {
 	httpResp *http.Response
-	cdbResp  *couchdbResponse
+	result   *Result
 	err      error
 }
 
@@ -76,10 +76,10 @@ func (resp *response) Error() error {
 	if resp.err != nil {
 		return resp.err
 	}
-	if err := resp.readCouchDBResponse(); err != nil {
+	if err := resp.readResult(); err != nil {
 		return err
 	}
-	return errors.New(ErrClientRequest, errorMessages, resp.httpResp.StatusCode, resp.cdbResp.Error, resp.cdbResp.Reason)
+	return errors.New(ErrClientRequest, errorMessages, resp.httpResp.StatusCode, resp.result.Error, resp.result.Reason)
 }
 
 // ID implements the Response interface.
@@ -87,10 +87,10 @@ func (resp *response) ID() string {
 	if !resp.IsOK() {
 		return ""
 	}
-	if err := resp.readCouchDBResponse(); err != nil {
+	if err := resp.readResult(); err != nil {
 		return ""
 	}
-	return resp.cdbResp.ID
+	return resp.result.ID
 }
 
 // Revision implements the Response interface.
@@ -98,10 +98,10 @@ func (resp *response) Revision() string {
 	if !resp.IsOK() {
 		return ""
 	}
-	if err := resp.readCouchDBResponse(); err != nil {
+	if err := resp.readResult(); err != nil {
 		return ""
 	}
-	return resp.cdbResp.Revision
+	return resp.result.Revision
 }
 
 // ResultValue implements the Response interface.
@@ -130,11 +130,11 @@ func (resp *response) ResultData() ([]byte, error) {
 	return body, nil
 }
 
-// readCouchDBResponse lazily loads the internal response of
+// readResult lazily loads the internal response of
 // the CouchDB.
-func (resp *response) readCouchDBResponse() error {
-	if resp.cdbResp == nil {
-		if err := resp.ResultValue(&resp.cdbResp); err != nil {
+func (resp *response) readResult() error {
+	if resp.result == nil {
+		if err := resp.ResultValue(&resp.result); err != nil {
 			return err
 		}
 	}

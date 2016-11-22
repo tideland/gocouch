@@ -31,6 +31,9 @@ type CouchDB interface {
 	// of the connected server.
 	AllDatabases() ([]string, error)
 
+	// HasDatabase checks if the configured database exists.
+	HasDatabase() (bool, error)
+
 	// CreateDatabase creates the configured database.
 	CreateDatabase() Response
 
@@ -59,6 +62,10 @@ type CouchDB interface {
 
 	// DeleteDocument deletes an existing document.
 	DeleteDocument(doc interface{}, rps ...Parameter) Response
+
+	// BulkWriteDocuments allows to create or update many
+	// documents en bloc.
+	BulkWriteDocuments(docs ...interface{}) (BulkResults, error)
 
 	// ViewDocuments reads the output of a view.
 	ViewDocuments(design, view string, rps ...Parameter) Response
@@ -99,6 +106,20 @@ func (db *couchdb) AllDatabases() ([]string, error) {
 		return nil, err
 	}
 	return ids, nil
+}
+
+// HasDatabase implements the CouchDB interface.
+func (db *couchdb) HasDatabase() (bool, error) {
+	all, err := db.AllDatabases()
+	if err != nil {
+		return false, err
+	}
+	for _, one := range all {
+		if one == db.database {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // CreateDatabase implements the CouchDB interface.
@@ -198,6 +219,24 @@ func (db *couchdb) DeleteDocument(doc interface{}, rps ...Parameter) Response {
 	rps = append(rps, Revision(rev))
 	req := newRequest(db, db.databasePath(id), nil)
 	return req.setParameters(rps...).delete()
+}
+
+// BulkWriteDocuments implements the CouchDB interface.
+func (db *couchdb) BulkWriteDocuments(docs ...interface{}) (BulkResults, error) {
+	bulk := &couchdbBulkDocuments{
+		Docs: docs,
+	}
+	req := newRequest(db, db.databasePath("_bulk_docs"), bulk)
+	resp := req.post()
+	if !resp.IsOK() {
+		return nil, resp.Error()
+	}
+	brs := BulkResults{}
+	err := resp.ResultValue(&brs)
+	if err != nil {
+		return nil, err
+	}
+	return brs, nil
 }
 
 // ViewDocuments implements the CouchDB interface.
