@@ -27,6 +27,7 @@ import (
 //--------------------
 
 const (
+	LargerCfg      = "{etc {couchdb {hostname localhost}{port 5984}{database tgocouch-testing-temporary}}}"
 	EmptyCfg       = "{etc}"
 	LocalhostCfg   = "{etc {hostname localhost}{port 5984}}"
 	TestingDBCfg   = "{etc {hostname localhost}{port 5984}{database tgocouch-testing}}"
@@ -51,12 +52,21 @@ func TestNoConfig(t *testing.T) {
 func TestAllDatabases(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
-	cfg, err := etc.ReadString(EmptyCfg)
+	cfg, err := etc.ReadString(LargerCfg)
 	assert.Nil(err)
 
-	cdb, err := couchdb.Open(cfg)
+	cdb, err := couchdb.OpenPath(cfg, "couchdb")
 	assert.Nil(err)
 	ids, err := cdb.AllDatabases()
+	assert.Nil(err)
+	assert.True(len(ids) != 0)
+
+	cfg, err = etc.ReadString(EmptyCfg)
+	assert.Nil(err)
+
+	cdb, err = couchdb.OpenPath(cfg, "")
+	assert.Nil(err)
+	ids, err = cdb.AllDatabases()
 	assert.Nil(err)
 	assert.True(len(ids) != 0)
 }

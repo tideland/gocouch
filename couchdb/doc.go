@@ -11,7 +11,7 @@
 // A connection to the database or at least a server can be established
 // by calling
 //
-//     cdb := couchdb.Open(cfg)
+//     cdb, err := couchdb.Open(cfg)
 //
 // The expected configuration is
 //
@@ -22,6 +22,9 @@
 //    }
 //
 // If any of the values isn't defined the default values above are taken.
+// Instead of splitting a larger configuration it's also possible to use
+//
+//    cdb, err := couchdb.OpenPath(cfg, "path/to/couchdb/config")
 //
 // The currently supported operations are the listing, creation, or deleting
 // of databases, the listing of all design document and document, and the

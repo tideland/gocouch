@@ -79,8 +79,22 @@ type couchdb struct {
 
 // Open returns a configured connection to a CouchDB server.
 func Open(cfg etc.Etc) (CouchDB, error) {
+	return OpenPath(cfg, "")
+}
+
+// OpenPath returns a configured connection to a CouchDB server.
+// The configuration is part of a larger configuration and the path
+// leads to its location.
+func OpenPath(cfg etc.Etc, path string) (CouchDB, error) {
 	if cfg == nil {
 		return nil, errors.New(ErrNoConfiguration, errorMessages)
+	}
+	if path != "" {
+		var err error
+		cfg, err = cfg.Split(path)
+		if err != nil {
+			return nil, errors.New(ErrNoConfiguration, errorMessages)
+		}
 	}
 	host := fmt.Sprintf("%s:%d",
 		cfg.ValueAsString("hostname", "localhost"),
