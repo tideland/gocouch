@@ -1,5 +1,9 @@
 # Tideland Go CouchDB Client
 
+## 2016-11-24
+
+- Added CRUD for design documents
+
 ## 2016-11-23
 
 - Edit *OpenPath()* to retrieve the nested configuration for

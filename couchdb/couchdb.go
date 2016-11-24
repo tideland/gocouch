@@ -45,7 +45,16 @@ type CouchDB interface {
 	AllDesignDocuments() ([]string, error)
 
 	// CreateDesignDocument creates a new design document.
-	CreateDesignDocument(doc *DesignDocument) Response
+	CreateDesignDocument(doc *DesignDocument, rps ...Parameter) Response
+
+	// ReadDesignDocument reads an existing design document.
+	ReadDesignDocument(id string, rps ...Parameter) (*DesignDocument, error)
+
+	// UpdateDesignDocument update an existing design document.
+	UpdateDesignDocument(doc *DesignDocument, rps ...Parameter) Response
+
+	// DeleteDesignDocument deletes an existing design document.
+	DeleteDesignDocument(doc *DesignDocument, rps ...Parameter) Response
 
 	// AllDocuments returns a list of all document IDs
 	// of the configured database.
@@ -168,9 +177,43 @@ func (db *couchdb) AllDesignDocuments() ([]string, error) {
 }
 
 // CreateDesignDocument implements the CouchDB interface.
-func (db *couchdb) CreateDesignDocument(doc *DesignDocument) Response {
+func (db *couchdb) CreateDesignDocument(doc *DesignDocument, rps ...Parameter) Response {
+	if !strings.HasPrefix(doc.ID, "_design/") {
+		doc.ID = "_design/" + doc.ID
+	}
 	req := newRequest(db, db.databasePath(doc.ID), doc)
-	return req.put()
+	return req.setParameters(rps...).put()
+}
+
+// ReadDesignDocument implements the CouchDB interface.
+func (db *couchdb) ReadDesignDocument(id string, rps ...Parameter) (*DesignDocument, error) {
+	if !strings.HasPrefix(id, "_design/") {
+		id = "_design/" + id
+	}
+	req := newRequest(db, db.databasePath(id), nil)
+	resp := req.setParameters(rps...).get()
+	if !resp.IsOK() {
+		return nil, resp.Error()
+	}
+	dd := DesignDocument{}
+	err := resp.ResultValue(&dd)
+	if err != nil {
+		return nil, err
+	}
+	return &dd, nil
+}
+
+// UpdateDesignDocument implements the CouchDB interface.
+func (db *couchdb) UpdateDesignDocument(doc *DesignDocument, rps ...Parameter) Response {
+	req := newRequest(db, db.databasePath(doc.ID), doc)
+	return req.setParameters(rps...).put()
+}
+
+// DeleteDesignDocument implements the CouchDB interface.
+func (db *couchdb) DeleteDesignDocument(doc *DesignDocument, rps ...Parameter) Response {
+	rps = append(rps, Revision(doc.Revision))
+	req := newRequest(db, db.databasePath(doc.ID), nil)
+	return req.setParameters(rps...).delete()
 }
 
 // AllDocuments implements the CouchDB interface.

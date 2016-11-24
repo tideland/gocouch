@@ -112,7 +112,100 @@ func TestCreateDesignDocument(t *testing.T) {
 	assert.Nil(err)
 
 	ddocA := &couchdb.DesignDocument{
-		ID: "_design/testing",
+		ID: "_design/testing-a",
+		Views: couchdb.DesignViews{
+			"index-a": couchdb.DesignView{
+				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
+			},
+		},
+	}
+	resp := cdb.CreateDesignDocument(ddocA)
+	assert.True(resp.IsOK())
+	ddocB := &couchdb.DesignDocument{
+		ID: "testing-b",
+		Views: couchdb.DesignViews{
+			"index-b": couchdb.DesignView{
+				Map: "function(doc){ if (doc._id.indexOf('b') !== -1) { emit(doc._id, doc._rev);  } }",
+			},
+		},
+	}
+	resp = cdb.CreateDesignDocument(ddocB)
+	assert.True(resp.IsOK())
+
+	allDesignB, err := cdb.AllDesignDocuments()
+	assert.Nil(err)
+	assert.Equal(len(allDesignB), len(allDesignA)+2)
+}
+
+// TestReadDesignDocument tests reading design documents.
+func TestReadDesignDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb, cleanup := prepareFilledDatabase("read-design", assert)
+	defer cleanup()
+
+	// Create design document and read it again.
+	ddocA := &couchdb.DesignDocument{
+		ID: "_design/testing-a",
+		Views: couchdb.DesignViews{
+			"index-a": couchdb.DesignView{
+				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
+			},
+		},
+	}
+	resp := cdb.CreateDesignDocument(ddocA)
+	assert.True(resp.IsOK())
+
+	ddocB, err := cdb.ReadDesignDocument("testing-a")
+	assert.Nil(err)
+	assert.Equal(ddocB.ID, ddocA.ID)
+}
+
+// TestUpdateDesignDocument tests updating design documents.
+func TestUpdateDesignDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb, cleanup := prepareFilledDatabase("update-design", assert)
+	defer cleanup()
+
+	// Create design document and read it again.
+	ddocA := &couchdb.DesignDocument{
+		ID: "_design/testing-a",
+		Views: couchdb.DesignViews{
+			"index-a": couchdb.DesignView{
+				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
+			},
+		},
+	}
+	resp := cdb.CreateDesignDocument(ddocA)
+	assert.True(resp.IsOK())
+
+	ddocB, err := cdb.ReadDesignDocument("testing-a")
+	assert.Nil(err)
+	assert.Equal(ddocB.ID, ddocA.ID)
+
+	// Now update it and read it again.
+	ddocB.Views["index-b"] = couchdb.DesignView{
+		Map: "function(doc){ if (doc._id.indexOf('b') !== -1) { emit(doc._id, doc._rev);  } }",
+	}
+	resp = cdb.UpdateDesignDocument(ddocB)
+	assert.True(resp.IsOK())
+
+	ddocC, err := cdb.ReadDesignDocument("testing-a")
+	assert.Nil(err)
+	assert.Length(ddocC.Views, 2)
+}
+
+// TestDeleteDesignDocument tests deleting design documents.
+func TestDeleteDesignDocument(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb, cleanup := prepareFilledDatabase("delete-design", assert)
+	defer cleanup()
+
+	// Create design document and check if it has been created.
+	allDesignA, err := cdb.AllDesignDocuments()
+	assert.Nil(err)
+
+	ddocA := &couchdb.DesignDocument{
+		ID: "_design/testing-a",
 		Views: couchdb.DesignViews{
 			"index-a": couchdb.DesignView{
 				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
@@ -125,6 +218,17 @@ func TestCreateDesignDocument(t *testing.T) {
 	allDesignB, err := cdb.AllDesignDocuments()
 	assert.Nil(err)
 	assert.Equal(len(allDesignB), len(allDesignA)+1)
+
+	// Read it and delete it.
+	ddocB, err := cdb.ReadDesignDocument("testing-a")
+	assert.Nil(err)
+
+	resp = cdb.DeleteDesignDocument(ddocB)
+	assert.True(resp.IsOK())
+
+	allDesignC, err := cdb.AllDesignDocuments()
+	assert.Nil(err)
+	assert.Equal(len(allDesignC), len(allDesignA))
 }
 
 // TestViewDocuments tests calling a view.
