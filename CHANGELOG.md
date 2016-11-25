@@ -1,5 +1,10 @@
 # Tideland Go CouchDB Client
 
+## 2016-11-25
+
+- Added *startup* package for database creation and
+  maintenance
+
 ## 2016-11-24
 
 - Added CRUD for design documents
