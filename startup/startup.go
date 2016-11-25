@@ -12,6 +12,7 @@ package startup
 //--------------------
 
 import (
+	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/version"
 
 	"github.com/tideland/gocouch/couchdb"
@@ -36,28 +37,17 @@ type DatabaseVersion struct {
 // STEP
 //--------------------
 
-// ShallStep returns true if the new version is newer than
-// the current version.
-func ShallStep(cv, nv version.Version) bool {
-	precedence, _ := nv.Compare(cv)
-	return precedence == version.Newer
-}
+// StepAction is the concrete action of a step.
+type StepAction func(cdb couchdb.CouchDB) error
 
-// Step defines one step in starting up a CouchDB. It receives
-// the current database version and has to return a new one if
-// it changes the database. So it initially should compare the
-// versions:
-//
-//    nv := version.New(1, 2, 3)
-//    if !startup.ShallStep(v, nv) {
-//        return nil, nil
-//    }
-//    ...
-//    return nv, nil
-type Step func(cdb couchdb.CouchDB, v version.Version) (version.Version, error)
+// Step returns the version after a startup step and the action
+// that shall be performed on the database. The returned action
+// will only be performed, if the current if the new version is
+// than the current version.
+type Step func() (version.Version, StepAction)
 
 // run performs one step.
-func (s Step) run(cdb couchdb.CouchDB) error {
+func (step Step) run(cdb couchdb.CouchDB) error {
 	// Retrieve current database version.
 	resp := cdb.ReadDocument(DatabaseVersionID)
 	if !resp.IsOK() {
@@ -70,21 +60,38 @@ func (s Step) run(cdb couchdb.CouchDB) error {
 	}
 	cv, err := version.Parse(dv.Version)
 	if err != nil {
-		return err
+		return errors.Annotate(err, ErrIllegalVersion, errorMessages)
 	}
-	// Now perform the step.
-	nv, err := s(cdb, cv)
-	if err != nil {
-		return err
-	}
-	// Update version document only if needed.
-	if nv == nil {
+	// Get new version of the step and action.
+	nv, action := step()
+	// Check the new version.
+	precedence, _ := nv.Compare(cv)
+	if precedence != version.Newer {
 		return nil
+	}
+	// Now perform the step action and update the
+	// version document.
+	err = action(cdb)
+	if err != nil {
+		return errors.Annotate(err, ErrStartupActionFailed, errorMessages, nv)
 	}
 	dv.Version = nv.String()
 	resp = cdb.UpdateDocument(&dv)
 	if !resp.IsOK() {
 		return resp.Error()
+	}
+	return nil
+}
+
+// Steps is just an ordered number of steps.
+type Steps []Step
+
+// run performs the steps.
+func (steps Steps) run(cdb couchdb.CouchDB) error {
+	for _, step := range steps {
+		if err := step.run(cdb); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -117,12 +124,7 @@ func Run(cdb couchdb.CouchDB, steps ...Step) error {
 		}
 	}
 	// Run the steps.
-	for _, step := range steps {
-		if err := step.run(cdb); err != nil {
-			return err
-		}
-	}
-	return nil
+	return Steps(steps).run(cdb)
 }
 
 // EOF

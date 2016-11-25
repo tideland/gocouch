@@ -138,62 +138,56 @@ func TestMultipleStartups(t *testing.T) {
 type MyDocument struct {
 	DocumentID       string `json:"_id,omitempty"`
 	DocumentRevision string `json:"_rev,omitempty"`
-
-	Name        string `json:"name"`
-	Age         int    `json:"age"`
-	Active      bool   `json:"active"`
-	Description string `json:"description"`
+	Name             string `json:"name"`
+	Age              int    `json:"age"`
 }
 
-func StepA(cdb couchdb.CouchDB, v version.Version) (version.Version, error) {
-	nv := version.New(0, 1, 0)
-	if !startup.ShallStep(v, nv) {
-		return nil, nil
+func StepA() (version.Version, startup.StepAction) {
+	v := version.New(0, 1, 0)
+	return v, func(cdb couchdb.CouchDB) error {
+		md := MyDocument{
+			DocumentID: "my-document-a",
+			Name:       "Joe Black",
+			Age:        25,
+		}
+		resp := cdb.CreateDocument(&md)
+		if !resp.IsOK() {
+			return resp.Error()
+		}
+		return nil
 	}
-	md := MyDocument{
-		DocumentID: "my-document-a",
-		Name:       "Joe Black",
-		Age:        25,
-	}
-	resp := cdb.CreateDocument(&md)
-	if !resp.IsOK() {
-		return nil, resp.Error()
-	}
-	return nv, nil
 }
 
-func StepB(cdb couchdb.CouchDB, v version.Version) (version.Version, error) {
-	nv := version.New(0, 2, 0)
-	if !startup.ShallStep(v, nv) {
-		return nil, nil
+func StepB() (version.Version, startup.StepAction) {
+	v := version.New(0, 2, 0)
+	return v, func(cdb couchdb.CouchDB) error {
+		md := MyDocument{
+			DocumentID: "my-document-b",
+			Name:       "John Doe",
+			Age:        51,
+		}
+		resp := cdb.CreateDocument(&md)
+		if !resp.IsOK() {
+			return resp.Error()
+		}
+		return nil
 	}
-	md := MyDocument{
-		DocumentID: "my-document-b",
-		Name:       "John Doe",
-		Age:        51,
-	}
-	resp := cdb.CreateDocument(&md)
-	if !resp.IsOK() {
-		return nil, resp.Error()
-	}
-	return nv, nil
 }
 
-func StepC(cdb couchdb.CouchDB, v version.Version) (version.Version, error) {
-	nv := version.New(0, 3, 0)
-	if !startup.ShallStep(v, nv) {
-		return nil, nil
+func StepC() (version.Version, startup.StepAction) {
+	v := version.New(0, 3, 0)
+	return v, func(cdb couchdb.CouchDB) error {
+		md := MyDocument{
+			DocumentID: "my-document-c",
+			Name:       "Donald Duck",
+			Age:        85,
+		}
+		resp := cdb.CreateDocument(&md)
+		if !resp.IsOK() {
+			return resp.Error()
+		}
+		return nil
 	}
-	md := MyDocument{
-		DocumentID: "my-document-c",
-		Name:       "Donald Duck",
-		Age:        85,
-	}
-	resp := cdb.CreateDocument(&md)
-	if !resp.IsOK() {
-		return nil, resp.Error()
-	}
-	return nv, nil
 }
 
 // EOF
