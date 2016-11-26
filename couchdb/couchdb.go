@@ -82,19 +82,22 @@ type CouchDB interface {
 
 // couchdb implements CouchDB.
 type couchdb struct {
-	host     string
-	database string
+	host       string
+	database   string
+	parameters []Parameter
 }
 
 // Open returns a configured connection to a CouchDB server.
-func Open(cfg etc.Etc) (CouchDB, error) {
-	return OpenPath(cfg, "")
+// Permanent parameters, e.g. for authentication, are possible.
+func Open(cfg etc.Etc, rps ...Parameter) (CouchDB, error) {
+	return OpenPath(cfg, "", rps...)
 }
 
 // OpenPath returns a configured connection to a CouchDB server.
 // The configuration is part of a larger configuration and the path
-// leads to its location.
-func OpenPath(cfg etc.Etc, path string) (CouchDB, error) {
+// leads to its location. Permanent parameters, e.g. for authentication,
+// are possible.
+func OpenPath(cfg etc.Etc, path string, rps ...Parameter) (CouchDB, error) {
 	if cfg == nil {
 		return nil, errors.New(ErrNoConfiguration, errorMessages)
 	}
@@ -110,8 +113,9 @@ func OpenPath(cfg etc.Etc, path string) (CouchDB, error) {
 		cfg.ValueAsInt("port", 5984),
 	)
 	db := &couchdb{
-		host:     host,
-		database: cfg.ValueAsString("database", "default"),
+		host:       host,
+		database:   cfg.ValueAsString("database", "default"),
+		parameters: rps,
 	}
 	return db, nil
 }
@@ -133,16 +137,15 @@ func (db *couchdb) AllDatabases() ([]string, error) {
 
 // HasDatabase implements the CouchDB interface.
 func (db *couchdb) HasDatabase() (bool, error) {
-	all, err := db.AllDatabases()
-	if err != nil {
-		return false, err
+	req := newRequest(db, db.databasePath(), nil)
+	resp := req.head()
+	if resp.IsOK() {
+		return true, nil
 	}
-	for _, one := range all {
-		if one == db.database {
-			return true, nil
-		}
+	if resp.StatusCode() == StatusNotFound {
+		return false, nil
 	}
-	return false, nil
+	return false, resp.Error()
 }
 
 // CreateDatabase implements the CouchDB interface.

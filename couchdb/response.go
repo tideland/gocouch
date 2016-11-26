@@ -20,6 +20,22 @@ import (
 )
 
 //--------------------
+// STATUS CODES
+//--------------------
+
+const (
+	StatusOK                  = http.StatusOK
+	StatusCreated             = http.StatusCreated
+	StatusAccepted            = http.StatusAccepted
+	StatusBadRequest          = http.StatusBadRequest
+	StatusUnauthorized        = http.StatusUnauthorized
+	StatusForbidden           = http.StatusForbidden
+	StatusNotFound            = http.StatusNotFound
+	StatusPreconditionFailed  = http.StatusPreconditionFailed
+	StatusInternalServerError = http.StatusInternalServerError
+)
+
+//--------------------
 // RESPONSE
 //--------------------
 
@@ -28,7 +44,10 @@ type Response interface {
 	// IsOK checks the status code if the response is okay.
 	IsOK() bool
 
-	// Error return a possible error of a request.
+	// StatusCode returns the status code of the request.
+	StatusCode() int
+
+	// Error returns a possible error of a request.
 	Error() error
 
 	// ID returns a potentially returned document identifier.
@@ -66,6 +85,14 @@ func newResponse(httpResp *http.Response, err error) *response {
 // IsOK implements the Response interface.
 func (resp *response) IsOK() bool {
 	return resp.err == nil && (resp.httpResp.StatusCode >= 200 && resp.httpResp.StatusCode <= 299)
+}
+
+// StatusCode implements the Response interface.
+func (resp *response) StatusCode() int {
+	if resp.httpResp == nil {
+		return -1
+	}
+	return resp.httpResp.StatusCode
 }
 
 // Error implements the Response interface.

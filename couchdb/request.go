@@ -26,6 +26,7 @@ import (
 //--------------------
 
 const (
+	methHead   = "HEAD"
 	methGet    = "GET"
 	methPut    = "PUT"
 	methPost   = "POST"
@@ -38,7 +39,7 @@ const (
 
 // request is responsible for an individual request to a CouchDB.
 type request struct {
-	db        *couchdb
+	cdb       *couchdb
 	path      string
 	doc       interface{}
 	docReader io.Reader
@@ -49,9 +50,9 @@ type request struct {
 
 // newRequest creates a new request for the given location, method, and path. If needed
 // query and header can be added like newRequest().setQuery().setHeader.do().
-func newRequest(db *couchdb, path string, doc interface{}) *request {
+func newRequest(cdb *couchdb, path string, doc interface{}) *request {
 	req := &request{
-		db:   db,
+		cdb:  cdb,
 		path: path,
 		doc:  doc,
 	}
@@ -60,9 +61,14 @@ func newRequest(db *couchdb, path string, doc interface{}) *request {
 
 // setParameters applies parameters to a request.
 func (req *request) setParameters(rps ...Parameter) *request {
-	ps := newParameters()
+	ps := newParameters(req.cdb.parameters)
 	ps.apply(req, rps...)
 	return req
+}
+
+// head performs a HEAD request.
+func (req *request) head() *response {
+	return req.do(methHead)
 }
 
 // get performs a GET request.
@@ -90,7 +96,7 @@ func (req *request) do(method string) *response {
 	// Prepare URL.
 	u := &url.URL{
 		Scheme: "http",
-		Host:   req.db.host,
+		Host:   req.cdb.host,
 		Path:   req.path,
 	}
 	if len(req.query) > 0 {

@@ -12,6 +12,7 @@ package couchdb
 //--------------------
 
 import (
+	"encoding/base64"
 	"net/http"
 	"net/url"
 )
@@ -20,8 +21,43 @@ import (
 // PARAMETER
 //--------------------
 
+// KeyValue is used for the generic query and header parameters.
+type KeyValue struct {
+	Key   string
+	Value string
+}
+
 // Parameter is a function changing one (or if needed multile) parameter.
 type Parameter func(ps *Parameters)
+
+// Query is generic for setting request query parameters.
+func Query(kvs ...KeyValue) Parameter {
+	return func(ps *Parameters) {
+		for _, kv := range kvs {
+			ps.query.Add(kv.Key, kv.Value)
+		}
+	}
+}
+
+// Header is generic for setting request header parameters.
+func Header(kvs ...KeyValue) Parameter {
+	return func(ps *Parameters) {
+		for _, kv := range kvs {
+			ps.header.Set(kv.Key, kv.Value)
+		}
+	}
+}
+
+// BasicAuthentication is intended for basic authentication
+// against the database.
+func BasicAuthentication(userID, password string) Parameter {
+	return func(ps *Parameters) {
+		up := []byte(userID + ":" + password)
+		auth := "Basic " + base64.StdEncoding.EncodeToString(up)
+
+		ps.header.Set("Authorization", auth)
+	}
+}
 
 // Revision sets the revision for the access to concrete document revisions.
 func Revision(revision string) Parameter {
@@ -58,14 +94,16 @@ func SetIncludeDocuments() Parameter {
 
 // Prameters contains different parameters for the requests to a CouchDB.
 type Parameters struct {
+	cdbps  []Parameter
 	keys   []interface{}
 	query  url.Values
 	header http.Header
 }
 
 // newParameters creates a new empty set of parameters.
-func newParameters() *Parameters {
+func newParameters(cdbps []Parameter) *Parameters {
 	return &Parameters{
+		cdbps:  cdbps,
 		query:  url.Values{},
 		header: http.Header{},
 	}
@@ -73,6 +111,7 @@ func newParameters() *Parameters {
 
 // apply passes possible parameters to a request.
 func (ps *Parameters) apply(req *request, rps ...Parameter) {
+	rps = append(ps.cdbps, rps...)
 	for _, rp := range rps {
 		rp(ps)
 	}
