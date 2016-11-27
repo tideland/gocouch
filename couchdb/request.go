@@ -43,26 +43,51 @@ type request struct {
 	path      string
 	doc       interface{}
 	docReader io.Reader
-	keys      []interface{}
 	query     url.Values
 	header    http.Header
+	keys      []interface{}
 }
 
 // newRequest creates a new request for the given location, method, and path. If needed
 // query and header can be added like newRequest().setQuery().setHeader.do().
 func newRequest(cdb *couchdb, path string, doc interface{}) *request {
 	req := &request{
-		cdb:  cdb,
-		path: path,
-		doc:  doc,
+		cdb:    cdb,
+		path:   path,
+		doc:    doc,
+		query:  url.Values{},
+		header: http.Header{},
+		keys:   []interface{}{},
 	}
+	req.apply(cdb.parameters...)
 	return req
 }
 
-// setParameters applies parameters to a request.
-func (req *request) setParameters(rps ...Parameter) *request {
-	ps := newParameters(req.cdb.parameters)
-	ps.apply(req, rps...)
+// SetQuery implements the Parametrizable interface.
+func (req *request) SetQuery(key, value string) {
+	req.query.Set(key, value)
+}
+
+// AddQuery implements the Parametrizable interface.
+func (req *request) AddQuery(key, value string) {
+	req.query.Add(key, value)
+}
+
+// SetHeader implements the Parametrizable interface.
+func (req *request) SetHeader(key, value string) {
+	req.header.Set(key, value)
+}
+
+// AddKeys implements the Parametrizable interface.
+func (req *request) AddKeys(keys ...interface{}) {
+	req.keys = append(req.keys, keys...)
+}
+
+// apply applies a list of parameters to the request.
+func (req *request) apply(rps ...Parameter) *request {
+	for _, rp := range rps {
+		rp(req)
+	}
 	return req
 }
 

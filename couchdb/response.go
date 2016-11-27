@@ -24,14 +24,18 @@ import (
 //--------------------
 
 const (
-	StatusOK                  = http.StatusOK
-	StatusCreated             = http.StatusCreated
-	StatusAccepted            = http.StatusAccepted
-	StatusBadRequest          = http.StatusBadRequest
-	StatusUnauthorized        = http.StatusUnauthorized
-	StatusForbidden           = http.StatusForbidden
-	StatusNotFound            = http.StatusNotFound
-	StatusPreconditionFailed  = http.StatusPreconditionFailed
+	StatusOK       = http.StatusOK
+	StatusCreated  = http.StatusCreated
+	StatusAccepted = http.StatusAccepted
+
+	StatusFound = http.StatusFound
+
+	StatusBadRequest         = http.StatusBadRequest
+	StatusUnauthorized       = http.StatusUnauthorized
+	StatusForbidden          = http.StatusForbidden
+	StatusNotFound           = http.StatusNotFound
+	StatusPreconditionFailed = http.StatusPreconditionFailed
+
 	StatusInternalServerError = http.StatusInternalServerError
 )
 

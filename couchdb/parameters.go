@@ -13,37 +13,54 @@ package couchdb
 
 import (
 	"encoding/base64"
-	"net/http"
-	"net/url"
 )
 
 //--------------------
-// PARAMETER
+// PARAMETERIZABLE
 //--------------------
 
-// KeyValue is used for the generic query and header parameters.
+// KeyValue is used for generic query and header parameters.
 type KeyValue struct {
 	Key   string
 	Value string
 }
 
+// Parameterizable defines the methods needed to apply the parameters.
+type Parameterizable interface {
+	// SetQuery sets a query parameter.
+	SetQuery(key, value string)
+
+	// AddQuery adds a query parameter to an existing one.
+	AddQuery(key, value string)
+
+	// SetHeader sets a header parameter.
+	SetHeader(key, value string)
+
+	// AddKeys adds view key parameters.
+	AddKeys(keys ...interface{})
+}
+
+//--------------------
+// PARAMETER
+//--------------------
+
 // Parameter is a function changing one (or if needed multile) parameter.
-type Parameter func(ps *Parameters)
+type Parameter func(pa Parameterizable)
 
 // Query is generic for setting request query parameters.
 func Query(kvs ...KeyValue) Parameter {
-	return func(ps *Parameters) {
+	return func(pa Parameterizable) {
 		for _, kv := range kvs {
-			ps.query.Add(kv.Key, kv.Value)
+			pa.AddQuery(kv.Key, kv.Value)
 		}
 	}
 }
 
 // Header is generic for setting request header parameters.
 func Header(kvs ...KeyValue) Parameter {
-	return func(ps *Parameters) {
+	return func(pa Parameterizable) {
 		for _, kv := range kvs {
-			ps.header.Set(kv.Key, kv.Value)
+			pa.SetHeader(kv.Key, kv.Value)
 		}
 	}
 }
@@ -51,78 +68,40 @@ func Header(kvs ...KeyValue) Parameter {
 // BasicAuthentication is intended for basic authentication
 // against the database.
 func BasicAuthentication(userID, password string) Parameter {
-	return func(ps *Parameters) {
+	return func(pa Parameterizable) {
 		up := []byte(userID + ":" + password)
 		auth := "Basic " + base64.StdEncoding.EncodeToString(up)
 
-		ps.header.Set("Authorization", auth)
+		pa.SetHeader("Authorization", auth)
 	}
 }
 
 // Revision sets the revision for the access to concrete document revisions.
 func Revision(revision string) Parameter {
-	return func(ps *Parameters) {
-		ps.query.Set("rev", revision)
+	return func(pa Parameterizable) {
+		pa.SetQuery("rev", revision)
 	}
 }
 
 // Keys sets a number of keys wanted from a view request.
 func Keys(keys ...interface{}) Parameter {
-	return func(ps *Parameters) {
-		ps.keys = append(ps.keys, keys...)
+	return func(pa Parameterizable) {
+		pa.AddKeys(keys...)
 	}
 }
 
 // StartEndKey sets the startkey and endkey for view requests.
 func StartEndKey(start, end string) Parameter {
-	return func(ps *Parameters) {
-		ps.query.Set("startkey", "\""+start+"\"")
-		ps.query.Set("endkey", "\""+end+"\"")
+	return func(pa Parameterizable) {
+		pa.SetQuery("startkey", "\""+start+"\"")
+		pa.SetQuery("endkey", "\""+end+"\"")
 	}
 }
 
 // IncludeDocuments sets the flag for the including of found view documents.
 func SetIncludeDocuments() Parameter {
-	return func(ps *Parameters) {
-		ps.query.Set("include_docs", "true")
-	}
-}
-
-//--------------------
-// PARAMETERS
-//--------------------
-
-// Prameters contains different parameters for the requests to a CouchDB.
-type Parameters struct {
-	cdbps  []Parameter
-	keys   []interface{}
-	query  url.Values
-	header http.Header
-}
-
-// newParameters creates a new empty set of parameters.
-func newParameters(cdbps []Parameter) *Parameters {
-	return &Parameters{
-		cdbps:  cdbps,
-		query:  url.Values{},
-		header: http.Header{},
-	}
-}
-
-// apply passes possible parameters to a request.
-func (ps *Parameters) apply(req *request, rps ...Parameter) {
-	rps = append(ps.cdbps, rps...)
-	for _, rp := range rps {
-		rp(ps)
-	}
-	if len(ps.keys) > 0 {
-		req.keys = ps.keys
-	}
-	if len(ps.query) > 0 {
-		req.query = ps.query
-	}
-	if len(ps.header) > 0 {
-		req.header = ps.header
+	return func(pa Parameterizable) {
+		pa.SetQuery("include_docs", "true")
 	}
 }
 
