@@ -1,5 +1,9 @@
 # Tideland Go CouchDB Client
 
+## 2016-11-27
+
+- Made parameters more beautiful
+
 ## 2016-11-25
 
 - Added *startup* package for database creation and
