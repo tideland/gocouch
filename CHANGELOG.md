@@ -3,6 +3,7 @@
 ## 2016-11-27
 
 - Made parameters more beautiful
+- Started better design implementation
 
 ## 2016-11-25
 

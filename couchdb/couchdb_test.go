@@ -108,31 +108,24 @@ func TestCreateDesignDocument(t *testing.T) {
 	defer cleanup()
 
 	// Create design document and check if it has been created.
-	allDesignA, err := cdb.AllDesignDocuments()
+	allDesignA, err := cdb.AllDesigns()
 	assert.Nil(err)
 
-	ddocA := &couchdb.DesignDocument{
-		ID: "_design/testing-a",
-		Views: couchdb.DesignViews{
-			"index-a": couchdb.DesignView{
-				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
-			},
-		},
-	}
-	resp := cdb.CreateDesignDocument(ddocA)
-	assert.True(resp.IsOK())
-	ddocB := &couchdb.DesignDocument{
-		ID: "testing-b",
-		Views: couchdb.DesignViews{
-			"index-b": couchdb.DesignView{
-				Map: "function(doc){ if (doc._id.indexOf('b') !== -1) { emit(doc._id, doc._rev);  } }",
-			},
-		},
-	}
-	resp = cdb.CreateDesignDocument(ddocB)
+	design, err := cdb.Design("testing-a")
+	assert.Nil(err)
+	assert.Equal(design.ID(), "testing-a")
+	design.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp := design.Write()
 	assert.True(resp.IsOK())
 
-	allDesignB, err := cdb.AllDesignDocuments()
+	design, err = cdb.Design("testing-b")
+	assert.Nil(err)
+	assert.Equal(design.ID(), "testing-b")
+	design.SetView("index-b", "function(doc){ if (doc._id.indexOf('b') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp = design.Write()
+	assert.True(resp.IsOK())
+
+	allDesignB, err := cdb.AllDesigns()
 	assert.Nil(err)
 	assert.Equal(len(allDesignB), len(allDesignA)+2)
 }
@@ -144,20 +137,16 @@ func TestReadDesignDocument(t *testing.T) {
 	defer cleanup()
 
 	// Create design document and read it again.
-	ddocA := &couchdb.DesignDocument{
-		ID: "_design/testing-a",
-		Views: couchdb.DesignViews{
-			"index-a": couchdb.DesignView{
-				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
-			},
-		},
-	}
-	resp := cdb.CreateDesignDocument(ddocA)
+	designA, err := cdb.Design("testing-a")
+	assert.Nil(err)
+	assert.Equal(designA.ID(), "testing-a")
+	designA.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp := designA.Write()
 	assert.True(resp.IsOK())
 
-	ddocB, err := cdb.ReadDesignDocument("testing-a")
+	designB, err := cdb.Design("testing-a")
 	assert.Nil(err)
-	assert.Equal(ddocB.ID, ddocA.ID)
+	assert.Equal(designB.ID(), "testing-a")
 }
 
 // TestUpdateDesignDocument tests updating design documents.
@@ -167,31 +156,29 @@ func TestUpdateDesignDocument(t *testing.T) {
 	defer cleanup()
 
 	// Create design document and read it again.
-	ddocA := &couchdb.DesignDocument{
-		ID: "_design/testing-a",
-		Views: couchdb.DesignViews{
-			"index-a": couchdb.DesignView{
-				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
-			},
-		},
-	}
-	resp := cdb.CreateDesignDocument(ddocA)
+	designA, err := cdb.Design("testing-a")
+	assert.Nil(err)
+	assert.Equal(designA.ID(), "testing-a")
+	designA.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp := designA.Write()
 	assert.True(resp.IsOK())
 
-	ddocB, err := cdb.ReadDesignDocument("testing-a")
+	designB, err := cdb.Design("testing-a")
 	assert.Nil(err)
-	assert.Equal(ddocB.ID, ddocA.ID)
+	assert.Equal(designB.ID(), "testing-a")
 
 	// Now update it and read it again.
-	ddocB.Views["index-b"] = couchdb.DesignView{
-		Map: "function(doc){ if (doc._id.indexOf('b') !== -1) { emit(doc._id, doc._rev);  } }",
-	}
-	resp = cdb.UpdateDesignDocument(ddocB)
+	designB.SetView("index-b", "function(doc){ if (doc._id.indexOf('b') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp = designB.Write()
 	assert.True(resp.IsOK())
 
-	ddocC, err := cdb.ReadDesignDocument("testing-a")
+	designC, err := cdb.Design("testing-a")
 	assert.Nil(err)
-	assert.Length(ddocC.Views, 2)
+	assert.Equal(designC.ID(), "testing-a")
+	_, _, ok := designC.View("index-a")
+	assert.True(ok)
+	_, _, ok = designC.View("index-b")
+	assert.True(ok)
 }
 
 // TestDeleteDesignDocument tests deleting design documents.
@@ -201,32 +188,26 @@ func TestDeleteDesignDocument(t *testing.T) {
 	defer cleanup()
 
 	// Create design document and check if it has been created.
-	allDesignA, err := cdb.AllDesignDocuments()
+	allDesignA, err := cdb.AllDesigns()
 	assert.Nil(err)
 
-	ddocA := &couchdb.DesignDocument{
-		ID: "_design/testing-a",
-		Views: couchdb.DesignViews{
-			"index-a": couchdb.DesignView{
-				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
-			},
-		},
-	}
-	resp := cdb.CreateDesignDocument(ddocA)
+	designA, err := cdb.Design("testing")
+	assert.Nil(err)
+	designA.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp := designA.Write()
 	assert.True(resp.IsOK())
 
-	allDesignB, err := cdb.AllDesignDocuments()
+	allDesignB, err := cdb.AllDesigns()
 	assert.Nil(err)
 	assert.Equal(len(allDesignB), len(allDesignA)+1)
 
 	// Read it and delete it.
-	ddocB, err := cdb.ReadDesignDocument("testing-a")
+	designB, err := cdb.Design("testing")
 	assert.Nil(err)
-
-	resp = cdb.DeleteDesignDocument(ddocB)
+	resp = designB.Delete()
 	assert.True(resp.IsOK())
 
-	allDesignC, err := cdb.AllDesignDocuments()
+	allDesignC, err := cdb.AllDesigns()
 	assert.Nil(err)
 	assert.Equal(len(allDesignC), len(allDesignA))
 }
@@ -238,22 +219,17 @@ func TestViewDocuments(t *testing.T) {
 	defer cleanup()
 
 	// Create design document.
-	ddocA := &couchdb.DesignDocument{
-		ID: "_design/testing",
-		Views: couchdb.DesignViews{
-			"index-a": couchdb.DesignView{
-				Map: "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }",
-			},
-		},
-	}
-	resp := cdb.CreateDesignDocument(ddocA)
+	design, err := cdb.Design("testing")
+	assert.Nil(err)
+	design.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	resp := design.Write()
 	assert.True(resp.IsOK())
 
 	// Call the view for the first time.
 	resp = cdb.ViewDocuments("testing", "index-a")
 	assert.True(resp.IsOK())
 	vr := couchdb.ViewResult{}
-	err := resp.ResultValue(&vr)
+	err = resp.ResultValue(&vr)
 	assert.Nil(err)
 	trOld := vr.TotalRows
 	assert.True(trOld > 0)

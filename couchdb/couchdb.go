@@ -43,25 +43,20 @@ type CouchDB interface {
 	// DeleteDatabase removes the configured database.
 	DeleteDatabase() Response
 
-	// AllDesignDocuments returns the lsit of all design
+	// AllDesigns returns the list of all design
 	// document IDs of the configured database.
-	AllDesignDocuments() ([]string, error)
+	AllDesigns() ([]string, error)
 
-	// CreateDesignDocument creates a new design document.
-	CreateDesignDocument(doc *DesignDocument, rps ...Parameter) Response
-
-	// ReadDesignDocument reads an existing design document.
-	ReadDesignDocument(id string, rps ...Parameter) (*DesignDocument, error)
-
-	// UpdateDesignDocument update an existing design document.
-	UpdateDesignDocument(doc *DesignDocument, rps ...Parameter) Response
-
-	// DeleteDesignDocument deletes an existing design document.
-	DeleteDesignDocument(doc *DesignDocument, rps ...Parameter) Response
+	// Design returns the design document instance for
+	// the given ID.
+	Design(id string) (Design, error)
 
 	// AllDocuments returns a list of all document IDs
 	// of the configured database.
 	AllDocuments() ([]string, error)
+
+	// HasDocument checks if the document with the ID exists.
+	HasDocument(id string) (bool, error)
 
 	// CreateDocument creates a new document.
 	CreateDocument(doc interface{}, rps ...Parameter) Response
@@ -163,8 +158,8 @@ func (cdb *couchdb) DeleteDatabase() Response {
 	return req.delete()
 }
 
-// AllDesignDocuments implements the CouchDB interface.
-func (cdb *couchdb) AllDesignDocuments() ([]string, error) {
+// AllDesigns implements the CouchDB interface.
+func (cdb *couchdb) AllDesigns() ([]string, error) {
 	req := newRequest(cdb, cdb.databasePath("_all_docs"), nil)
 	resp := req.apply(StartEndKey("_design/", "_design0")).get()
 	if !resp.IsOK() {
@@ -180,6 +175,11 @@ func (cdb *couchdb) AllDesignDocuments() ([]string, error) {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil
+}
+
+// Design implements the CouchDB interface.
+func (cdb *couchdb) Design(id string) (Design, error) {
+	return newDesign(cdb, id)
 }
 
 // CreateDesignDocument implements the CouchDB interface.
@@ -239,6 +239,19 @@ func (cdb *couchdb) AllDocuments() ([]string, error) {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil
+}
+
+// HasDocument implements the CouchDB interface.
+func (cdb *couchdb) HasDocument(id string) (bool, error) {
+	req := newRequest(cdb, cdb.databasePath(id), nil)
+	resp := req.head()
+	if resp.IsOK() {
+		return true, nil
+	}
+	if resp.StatusCode() == StatusNotFound {
+		return false, nil
+	}
+	return false, resp.Error()
 }
 
 // CreateDocument implements the CouchDB interface.
