@@ -11,48 +11,56 @@ package couchdb
 // IMPORTS
 //--------------------
 
-import ()
+import (
+	"encoding/json"
+
+	"github.com/tideland/golib/errors"
+)
 
 //--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
 
-// DesignView defines a view inside a design document.
-type DesignView struct {
-	Map    string `json:"map,omitempty"`
-	Reduce string `json:"reduce,omitempty"`
-}
-
-type DesignViews map[string]DesignView
-
-// DesignAttachment defines an attachment inside a design document.
-type DesignAttachment struct {
-	Stub        bool   `json:"stub,omitempty"`
-	ContentType string `json:"content_type,omitempty"`
-	Length      int    `json:"length,omitempty"`
-}
-
-type DesignAttachments map[string]DesignAttachment
-
-// DesignDocument contains the data of view design documents.
-type DesignDocument struct {
-	ID                     string            `json:"_id"`
-	Revision               string            `json:"_rev,omitempty"`
-	Language               string            `json:"language,omitempty"`
-	ValidateDocumentUpdate string            `json:"validate_doc_update,omitempty"`
-	Views                  DesignViews       `json:"views,omitempty"`
-	Shows                  map[string]string `json:"shows,omitempty"`
-	Attachments            DesignAttachments `json:"_attachments,omitempty"`
-	Signatures             map[string]string `json:"signatures,omitempty"`
-	Libraries              interface{}       `json:"libs,omitempty"`
-}
-
-// ViewRow contains one row of a view result.
+// ViewRow contains one row of a view result. The unmarshal
+// methods allow to transform more complex results into according
+// variables.
 type ViewRow struct {
 	ID       string      `json:"id"`
 	Key      interface{} `json:"key"`
 	Value    interface{} `json:"value"`
 	Document interface{} `json:"doc"`
+}
+
+// UnmarshalKey converts the key field of the row into the
+// passed variable.
+func (vr ViewRow) UnmarshalKey(key interface{}) error {
+	return vr.remarshal(vr.Key, key)
+}
+
+// UnmarshalValue converts the value field of the row into the
+// passed variable.
+func (vr ViewRow) UnmarshalValue(value interface{}) error {
+	return vr.remarshal(vr.Value, value)
+}
+
+// UnmarshalDocument converts the document field of the row into the
+// passed variable.
+func (vr ViewRow) UnmarshalDocument(doc interface{}) error {
+	return vr.remarshal(vr.Document, doc)
+}
+
+// remarshal marshals the in value to JSON again and unmarshals
+// it to the out value.
+func (vr ViewRow) remarshal(in, out interface{}) error {
+	tmp, err := json.Marshal(in)
+	if err != nil {
+		return errors.Annotate(err, ErrRemarshalling, errorMessages)
+	}
+	err = json.Unmarshal(tmp, out)
+	if err != nil {
+		return errors.Annotate(err, ErrRemarshalling, errorMessages)
+	}
+	return nil
 }
 
 type ViewRows []ViewRow

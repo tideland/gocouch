@@ -221,7 +221,7 @@ func TestViewDocuments(t *testing.T) {
 	// Create design document.
 	design, err := cdb.Design("testing")
 	assert.Nil(err)
-	design.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc._rev);  } }", "")
+	design.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc);  } }", "")
 	resp := design.Write()
 	assert.True(resp.IsOK())
 
@@ -248,6 +248,10 @@ func TestViewDocuments(t *testing.T) {
 	assert.Nil(err)
 	trNew := vr.TotalRows
 	assert.Equal(trNew, trOld+1)
+	valueA := MyDocument{}
+	err = vr.Rows[0].UnmarshalValue(&valueA)
+	assert.Nil(err)
+	assert.True(strings.Contains(valueA.DocumentID, "a"))
 
 	// Add a non-matching document and view again.
 	docB := MyDocument{

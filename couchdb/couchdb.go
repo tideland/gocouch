@@ -182,46 +182,6 @@ func (cdb *couchdb) Design(id string) (Design, error) {
 	return newDesign(cdb, id)
 }
 
-// CreateDesignDocument implements the CouchDB interface.
-func (cdb *couchdb) CreateDesignDocument(doc *DesignDocument, rps ...Parameter) Response {
-	if !strings.HasPrefix(doc.ID, "_design/") {
-		doc.ID = "_design/" + doc.ID
-	}
-	req := newRequest(cdb, cdb.databasePath(doc.ID), doc)
-	return req.apply(rps...).put()
-}
-
-// ReadDesignDocument implements the CouchDB interface.
-func (cdb *couchdb) ReadDesignDocument(id string, rps ...Parameter) (*DesignDocument, error) {
-	if !strings.HasPrefix(id, "_design/") {
-		id = "_design/" + id
-	}
-	req := newRequest(cdb, cdb.databasePath(id), nil)
-	resp := req.apply(rps...).get()
-	if !resp.IsOK() {
-		return nil, resp.Error()
-	}
-	dd := DesignDocument{}
-	err := resp.ResultValue(&dd)
-	if err != nil {
-		return nil, err
-	}
-	return &dd, nil
-}
-
-// UpdateDesignDocument implements the CouchDB interface.
-func (cdb *couchdb) UpdateDesignDocument(doc *DesignDocument, rps ...Parameter) Response {
-	req := newRequest(cdb, cdb.databasePath(doc.ID), doc)
-	return req.apply(rps...).put()
-}
-
-// DeleteDesignDocument implements the CouchDB interface.
-func (cdb *couchdb) DeleteDesignDocument(doc *DesignDocument, rps ...Parameter) Response {
-	rps = append(rps, Revision(doc.Revision))
-	req := newRequest(cdb, cdb.databasePath(doc.ID), nil)
-	return req.apply(rps...).delete()
-}
-
 // AllDocuments implements the CouchDB interface.
 func (cdb *couchdb) AllDocuments() ([]string, error) {
 	req := newRequest(cdb, cdb.databasePath("_all_docs"), nil)

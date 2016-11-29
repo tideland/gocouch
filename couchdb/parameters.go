@@ -98,6 +98,12 @@ func StartEndKey(start, end string) Parameter {
 	}
 }
 
+// OneKey sets the startkey and endkey for view requests for
+// only one key
+func OneKey(key string) Parameter {
+	return StartEndKey(key, key)
+}
+
 // IncludeDocuments sets the flag for the including of found view documents.
 func SetIncludeDocuments() Parameter {
 	return func(pa Parameterizable) {
