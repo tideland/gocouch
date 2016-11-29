@@ -22,6 +22,12 @@ type Design interface {
 	// ID returns the ID of the design.
 	ID() string
 
+	// Language returns the language for views and shows.
+	Language() string
+
+	// Language sets the language for views and shows.
+	SetLanguage(language string)
+
 	// View returns the map and the reduce functions of the
 	// view with the ID, otherwise false.
 	View(id string) (string, string, bool)
@@ -30,12 +36,10 @@ type Design interface {
 	// view with the ID.
 	SetView(id, mapf, reducef string)
 
-	// Show returns the show function of the view with
-	//the ID, otherwise false.
+	// Show returns the show function with the ID, otherwise false.
 	Show(id string) (string, bool)
 
-	// SetShow sets the show function of the view with
-	// the ID.
+	// SetShow sets the show function with the ID.
 	SetShow(id, showf string)
 
 	// Write creates a new design document or updates an
@@ -89,6 +93,16 @@ func newDesign(cdb *couchdb, id string) (*design, error) {
 // ID implements the Design interface.
 func (d *design) ID() string {
 	return d.id
+}
+
+// Language implements the Design interface.
+func (d *design) Language() string {
+	return d.document.Language
+}
+
+// SetLanguage implements the Design interface.
+func (d *design) SetLanguage(language string) {
+	d.document.Language = language
 }
 
 // View implements the Design interface.
