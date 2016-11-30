@@ -71,7 +71,7 @@ type ResultSet interface {
 // resultSet implements the ResultSet interface.
 type resultSet struct {
 	resp   *http.Response
-	status *couchdbStatus
+	status *Status
 	err    error
 }
 

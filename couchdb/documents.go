@@ -72,8 +72,8 @@ type ViewResult struct {
 	Rows      ViewRows `json:"rows"`
 }
 
-// Result contains internal status information CouchDB returns.
-type Result struct {
+// Status contains internal status information CouchDB returns.
+type Status struct {
 	OK       bool   `json:"ok"`
 	ID       string `json:"id"`
 	Revision string `json:"rev"`
@@ -81,21 +81,12 @@ type Result struct {
 	Reason   string `json:"reason"`
 }
 
-// BulkResults is the list of results after a bulk writing.
-type BulkResults []Result
+// Statuaess is the list of status information after a bulk writing.
+type Statuses []Status
 
 //--------------------
 // INTERNAL DOCUMENT TYPES
 //--------------------
-
-// couchdbStatus contains internal status information CouchDB returns.
-type couchdbStatus struct {
-	OK       bool   `json:"ok"`
-	ID       string `json:"id"`
-	Revision string `json:"rev"`
-	Error    string `json:"error"`
-	Reason   string `json:"reason"`
-}
 
 // couchdbAuthentication contains user ID and password
 // for authentication.

@@ -72,7 +72,7 @@ type CouchDB interface {
 
 	// BulkWriteDocuments allows to create or update many
 	// documents en bloc.
-	BulkWriteDocuments(docs ...interface{}) (BulkResults, error)
+	BulkWriteDocuments(docs ...interface{}) (Statuses, error)
 
 	// ViewDocuments reads the output of a view.
 	ViewDocuments(design, view string, rps ...Parameter) ResultSet
@@ -258,7 +258,7 @@ func (cdb *couchdb) DeleteDocument(doc interface{}, rps ...Parameter) ResultSet 
 }
 
 // BulkWriteDocuments implements the CouchDB interface.
-func (cdb *couchdb) BulkWriteDocuments(docs ...interface{}) (BulkResults, error) {
+func (cdb *couchdb) BulkWriteDocuments(docs ...interface{}) (Statuses, error) {
 	bulk := &couchdbBulkDocuments{
 		Docs: docs,
 	}
@@ -267,12 +267,12 @@ func (cdb *couchdb) BulkWriteDocuments(docs ...interface{}) (BulkResults, error)
 	if !resp.IsOK() {
 		return nil, resp.Error()
 	}
-	brs := BulkResults{}
-	err := resp.Document(&brs)
+	statuses := Statuses{}
+	err := resp.Document(&statuses)
 	if err != nil {
 		return nil, err
 	}
-	return brs, nil
+	return statuses, nil
 }
 
 // ViewDocuments implements the CouchDB interface.
