@@ -70,7 +70,7 @@ func (u unmarshable) Unmarshal(doc interface{}) error {
 }
 
 //--------------------
-// VIEW
+// VIEW RESULT SET
 //--------------------
 
 // RowProcessingFunc is a function processing the content
