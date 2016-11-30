@@ -242,7 +242,7 @@ func TestCallingView(t *testing.T) {
 	assert.True(vrs.IsOK())
 	trNew := vrs.TotalRows()
 	assert.Equal(trNew, trOld+1)
-	err = vrs.RowsDo(func(id string, key, value, doc couchdb.Unmarshable) error {
+	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
 		valueA := MyDocument{}
 		err := value.Unmarshal(&valueA)
 		assert.Nil(err)

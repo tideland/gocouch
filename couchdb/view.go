@@ -22,10 +22,15 @@ import (
 //--------------------
 
 // Unmarshable describes an empty interface that can be
-// unmarshalled into a given variable.
+// unmarshalled into a given variable. It is used to
+// access key, value, or document of view result rows.
 type Unmarshable interface {
 	// Raw returns the original empty interface.
 	Raw() interface{}
+
+	// JSON returns the JSON encoded value as it has
+	// been part of a row.
+	JSON() ([]byte, error)
 
 	// Unmarshal unmarshals the interface into the
 	// passed variable.
@@ -42,13 +47,22 @@ func (u unmarshable) Raw() interface{} {
 	return u.value
 }
 
+// JSON implements the Unmarshable interface.
+func (u unmarshable) JSON() ([]byte, error) {
+	jb, err := json.Marshal(u.value)
+	if err != nil {
+		return nil, errors.Annotate(err, ErrRemarshalling, errorMessages)
+	}
+	return jb, nil
+}
+
 // Unmarshal implements the Unmarshable interface.
 func (u unmarshable) Unmarshal(doc interface{}) error {
-	tmp, err := json.Marshal(u.value)
+	jb, err := u.JSON()
 	if err != nil {
-		return errors.Annotate(err, ErrRemarshalling, errorMessages)
+		return err
 	}
-	err = json.Unmarshal(tmp, doc)
+	err = json.Unmarshal(jb, doc)
 	if err != nil {
 		return errors.Annotate(err, ErrRemarshalling, errorMessages)
 	}
