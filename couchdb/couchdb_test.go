@@ -229,7 +229,7 @@ func TestViewDocuments(t *testing.T) {
 	resp = cdb.ViewDocuments("testing", "index-a")
 	assert.True(resp.IsOK())
 	vr := couchdb.ViewResult{}
-	err = resp.ResultValue(&vr)
+	err = resp.Document(&vr)
 	assert.Nil(err)
 	trOld := vr.TotalRows
 	assert.True(trOld > 0)
@@ -244,7 +244,7 @@ func TestViewDocuments(t *testing.T) {
 	resp = cdb.ViewDocuments("testing", "index-a")
 	assert.True(resp.IsOK())
 	vr = couchdb.ViewResult{}
-	err = resp.ResultValue(&vr)
+	err = resp.Document(&vr)
 	assert.Nil(err)
 	trNew := vr.TotalRows
 	assert.Equal(trNew, trOld+1)
@@ -263,7 +263,7 @@ func TestViewDocuments(t *testing.T) {
 	resp = cdb.ViewDocuments("testing", "index-a")
 	assert.True(resp.IsOK())
 	vr = couchdb.ViewResult{}
-	err = resp.ResultValue(&vr)
+	err = resp.Document(&vr)
 	assert.Nil(err)
 	trFinal := vr.TotalRows
 	assert.Equal(trFinal, trNew)
@@ -320,7 +320,7 @@ func TestReadDocument(t *testing.T) {
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docB := MyDocument{}
-	err := resp.ResultValue(&docB)
+	err := resp.Document(&docB)
 	assert.Nil(err)
 	assert.Equal(docB.DocumentID, docA.DocumentID)
 	assert.Equal(docB.Name, docA.Name)
@@ -353,7 +353,7 @@ func TestUpdateDocument(t *testing.T) {
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docB := MyDocument{}
-	err := resp.ResultValue(&docB)
+	err := resp.Document(&docB)
 	assert.Nil(err)
 
 	// Update the document.
@@ -366,7 +366,7 @@ func TestUpdateDocument(t *testing.T) {
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docC := MyDocument{}
-	err = resp.ResultValue(&docC)
+	err = resp.Document(&docC)
 	assert.Nil(err)
 	assert.Equal(docC.DocumentID, docB.DocumentID)
 	assert.Substring("2-", docC.DocumentRevision)
@@ -377,7 +377,7 @@ func TestUpdateDocument(t *testing.T) {
 	resp = cdb.ReadDocument(id, couchdb.Revision(revision))
 	assert.True(resp.IsOK())
 	docD := MyDocument{}
-	err = resp.ResultValue(&docD)
+	err = resp.Document(&docD)
 	assert.Nil(err)
 	assert.Equal(docD.DocumentRevision, revision)
 	assert.Equal(docD.Age, docA.Age)
@@ -404,7 +404,7 @@ func TestDeleteDocument(t *testing.T) {
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docB := MyDocument{}
-	err := resp.ResultValue(&docB)
+	err := resp.Document(&docB)
 	assert.Nil(err)
 
 	// Delete the test document.
