@@ -11,66 +11,11 @@ package couchdb
 // IMPORTS
 //--------------------
 
-import (
-	"encoding/json"
-
-	"github.com/tideland/golib/errors"
-)
+import ()
 
 //--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
-
-// ViewRow contains one row of a view result. The unmarshal
-// methods allow to transform more complex results into according
-// variables.
-type ViewRow struct {
-	ID       string      `json:"id"`
-	Key      interface{} `json:"key"`
-	Value    interface{} `json:"value"`
-	Document interface{} `json:"doc"`
-}
-
-// UnmarshalKey converts the key field of the row into the
-// passed variable.
-func (vr ViewRow) UnmarshalKey(key interface{}) error {
-	return vr.remarshal(vr.Key, key)
-}
-
-// UnmarshalValue converts the value field of the row into the
-// passed variable.
-func (vr ViewRow) UnmarshalValue(value interface{}) error {
-	return vr.remarshal(vr.Value, value)
-}
-
-// UnmarshalDocument converts the document field of the row into the
-// passed variable.
-func (vr ViewRow) UnmarshalDocument(doc interface{}) error {
-	return vr.remarshal(vr.Document, doc)
-}
-
-// remarshal marshals the in value to JSON again and unmarshals
-// it to the out value.
-func (vr ViewRow) remarshal(in, out interface{}) error {
-	tmp, err := json.Marshal(in)
-	if err != nil {
-		return errors.Annotate(err, ErrRemarshalling, errorMessages)
-	}
-	err = json.Unmarshal(tmp, out)
-	if err != nil {
-		return errors.Annotate(err, ErrRemarshalling, errorMessages)
-	}
-	return nil
-}
-
-type ViewRows []ViewRow
-
-// ViewResult is a generic result of a CouchDB view.
-type ViewResult struct {
-	TotalRows int      `json:"total_rows"`
-	Offset    int      `json:"offset"`
-	Rows      ViewRows `json:"rows"`
-}
 
 // Status contains internal status information CouchDB returns.
 type Status struct {

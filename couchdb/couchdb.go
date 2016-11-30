@@ -74,8 +74,8 @@ type CouchDB interface {
 	// documents en bloc.
 	BulkWriteDocuments(docs ...interface{}) (Statuses, error)
 
-	// ViewDocuments reads the output of a view.
-	ViewDocuments(design, view string, rps ...Parameter) ResultSet
+	// View performs a view request.
+	View(design, view string, rps ...Parameter) ViewResultSet
 }
 
 // couchdb implements CouchDB.
@@ -165,7 +165,7 @@ func (cdb *couchdb) AllDesigns() ([]string, error) {
 	if !resp.IsOK() {
 		return nil, resp.Error()
 	}
-	vr := ViewResult{}
+	vr := viewResult{}
 	err := resp.Document(&vr)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (cdb *couchdb) AllDocuments() ([]string, error) {
 	if !resp.IsOK() {
 		return nil, resp.Error()
 	}
-	vr := ViewResult{}
+	vr := viewResult{}
 	err := resp.Document(&vr)
 	if err != nil {
 		return nil, err
@@ -275,14 +275,16 @@ func (cdb *couchdb) BulkWriteDocuments(docs ...interface{}) (Statuses, error) {
 	return statuses, nil
 }
 
-// ViewDocuments implements the CouchDB interface.
-func (cdb *couchdb) ViewDocuments(design, view string, rps ...Parameter) ResultSet {
+// View implements the CouchDB interface.
+func (cdb *couchdb) View(design, view string, rps ...Parameter) ViewResultSet {
 	req := newRequest(cdb, cdb.databasePath("_design", design, "_view", view), nil)
 	req = req.apply(rps...)
+	var rs ResultSet
 	if len(req.keys) > 0 {
-		return req.post()
+		rs = req.post()
 	}
-	return req.get()
+	rs = req.get()
+	return newView(rs)
 }
 
 // databasePath creates a path containing the passed

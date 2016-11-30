@@ -56,7 +56,7 @@ func TestNoSteps(t *testing.T) {
 	assert.True(resp.IsOK())
 
 	dv := startup.DatabaseVersion{}
-	err = resp.ResultValue(&dv)
+	err = resp.Document(&dv)
 	assert.Nil(err)
 	assert.Equal(dv.Version, "0.0.0")
 }
@@ -79,7 +79,7 @@ func TestSomeSteps(t *testing.T) {
 	assert.True(resp.IsOK())
 
 	dv := startup.DatabaseVersion{}
-	err = resp.ResultValue(&dv)
+	err = resp.Document(&dv)
 	assert.Nil(err)
 	assert.Equal(dv.Version, "0.2.0")
 
@@ -110,7 +110,7 @@ func TestMultipleStartups(t *testing.T) {
 	assert.True(resp.IsOK())
 
 	dv := startup.DatabaseVersion{}
-	err = resp.ResultValue(&dv)
+	err = resp.Document(&dv)
 	assert.Nil(err)
 	assert.Equal(dv.Version, "0.1.0")
 
@@ -121,7 +121,7 @@ func TestMultipleStartups(t *testing.T) {
 	assert.True(resp.IsOK())
 
 	dv = startup.DatabaseVersion{}
-	err = resp.ResultValue(&dv)
+	err = resp.Document(&dv)
 	assert.Nil(err)
 
 	assert.Equal(dv.Version, "0.3.0")

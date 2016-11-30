@@ -54,7 +54,7 @@ func (step Step) run(cdb couchdb.CouchDB) error {
 		return resp.Error()
 	}
 	dv := DatabaseVersion{}
-	err := resp.ResultValue(&dv)
+	err := resp.Document(&dv)
 	if err != nil {
 		return err
 	}

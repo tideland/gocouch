@@ -212,8 +212,8 @@ func TestDeleteDesignDocument(t *testing.T) {
 	assert.Equal(len(allDesignC), len(allDesignA))
 }
 
-// TestViewDocuments tests calling a view.
-func TestViewDocuments(t *testing.T) {
+// TestCallingView tests calling a view.
+func TestCallingView(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb, cleanup := prepareFilledDatabase("view-documents", assert)
 	defer cleanup()
@@ -226,12 +226,9 @@ func TestViewDocuments(t *testing.T) {
 	assert.True(resp.IsOK())
 
 	// Call the view for the first time.
-	resp = cdb.ViewDocuments("testing", "index-a")
-	assert.True(resp.IsOK())
-	vr := couchdb.ViewResult{}
-	err = resp.Document(&vr)
-	assert.Nil(err)
-	trOld := vr.TotalRows
+	vrs := cdb.View("testing", "index-a")
+	assert.True(vrs.IsOK())
+	trOld := vrs.TotalRows()
 	assert.True(trOld > 0)
 
 	// Add a matching document and view again.
@@ -241,17 +238,18 @@ func TestViewDocuments(t *testing.T) {
 	}
 	resp = cdb.CreateDocument(docA)
 	assert.True(resp.IsOK())
-	resp = cdb.ViewDocuments("testing", "index-a")
-	assert.True(resp.IsOK())
-	vr = couchdb.ViewResult{}
-	err = resp.Document(&vr)
-	assert.Nil(err)
-	trNew := vr.TotalRows
+	vrs = cdb.View("testing", "index-a")
+	assert.True(vrs.IsOK())
+	trNew := vrs.TotalRows()
 	assert.Equal(trNew, trOld+1)
-	valueA := MyDocument{}
-	err = vr.Rows[0].UnmarshalValue(&valueA)
+	err = vrs.RowsDo(func(id string, key, value, doc couchdb.Unmarshable) error {
+		valueA := MyDocument{}
+		err := value.Unmarshal(&valueA)
+		assert.Nil(err)
+		assert.True(strings.Contains(valueA.DocumentID, "a"))
+		return err
+	})
 	assert.Nil(err)
-	assert.True(strings.Contains(valueA.DocumentID, "a"))
 
 	// Add a non-matching document and view again.
 	docB := MyDocument{
@@ -260,14 +258,10 @@ func TestViewDocuments(t *testing.T) {
 	}
 	resp = cdb.CreateDocument(docB)
 	assert.True(resp.IsOK())
-	resp = cdb.ViewDocuments("testing", "index-a")
-	assert.True(resp.IsOK())
-	vr = couchdb.ViewResult{}
-	err = resp.Document(&vr)
-	assert.Nil(err)
-	trFinal := vr.TotalRows
+	vrs = cdb.View("testing", "index-a")
+	assert.True(vrs.IsOK())
+	trFinal := vrs.TotalRows()
 	assert.Equal(trFinal, trNew)
-
 }
 
 // TestCreateDocument tests creating new documents.

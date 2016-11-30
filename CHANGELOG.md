@@ -3,6 +3,7 @@
 ## 2016-11-30
 
 - Larger renamings for more consistent naming
+- *View* is now an own type
 
 ## 2016-11-27
 
