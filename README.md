@@ -9,7 +9,7 @@ I hope you like it. ;)
 
 ## Version
 
-Version 1.0.0-alpha.2016-11-28
+Version 1.0.0-alpha.2016-11-30
 
 ## Packages
 
@@ -19,8 +19,8 @@ CouchDB client.
 
 [![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
 
-#### Document
+#### Startup
 
-Helpers for the creation and usage of documents.
+Mechanism for a clean database startup and initialisation including database versioning.
 
-**WiP**
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch/startup?status.svg)](https://godoc.org/github.com/tideland/gocouch/startup)

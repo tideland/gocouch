@@ -44,10 +44,10 @@ type Design interface {
 
 	// Write creates a new design document or updates an
 	// existing one.
-	Write(rps ...Parameter) Response
+	Write(rps ...Parameter) ResultSet
 
 	// Delete a design document.
-	Delete(rps ...Parameter) Response
+	Delete(rps ...Parameter) ResultSet
 }
 
 // design implements the Design interface.
@@ -71,7 +71,7 @@ func newDesign(cdb *couchdb, id string) (*design, error) {
 		if !resp.IsOK() {
 			return nil, resp.Error()
 		}
-		err = resp.ResultValue(&document)
+		err = resp.Document(&document)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func (d *design) SetShow(id, showf string) {
 }
 
 // Write implements the Design interface.
-func (d *design) Write(rps ...Parameter) Response {
+func (d *design) Write(rps ...Parameter) ResultSet {
 	if d.document.Revision == "" {
 		return d.cdb.CreateDocument(d.document, rps...)
 	}
@@ -157,7 +157,7 @@ func (d *design) Write(rps ...Parameter) Response {
 }
 
 // Delete implements the Design interface.
-func (d *design) Delete(rps ...Parameter) Response {
+func (d *design) Delete(rps ...Parameter) ResultSet {
 	return d.cdb.DeleteDocument(d.document, rps...)
 }
 

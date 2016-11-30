@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - Response
+// Tideland Go CouchDB Client - CouchDB - RessultSet
 //
 // Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
 //
@@ -40,12 +40,12 @@ const (
 )
 
 //--------------------
-// RESPONSE
+// RESULT SET
 //--------------------
 
-// Response contains the server response.
-type Response interface {
-	// IsOK checks the status code if the response is okay.
+// ResultSet contains the server result set.
+type ResultSet interface {
+	// IsOK checks the status code if the result is okay.
 	IsOK() bool
 
 	// StatusCode returns the status code of the request.
@@ -60,84 +60,83 @@ type Response interface {
 	// Revision returns a potentially returned document revision.
 	Revision() string
 
-	// ResultValue returns the received document of a client
+	// Document returns the received document of a client
 	// request and unmorshals it.
-	ResultValue(value interface{}) error
+	Document(value interface{}) error
 
-	// ResultData returns the received data of a client
-	// request.
-	ResultData() ([]byte, error)
+	// Raw returns the received raw data of a client request.
+	Raw() ([]byte, error)
 }
 
-// response implements the Response interface.
-type response struct {
-	httpResp *http.Response
-	result   *Result
-	err      error
+// resultSet implements the ResultSet interface.
+type resultSet struct {
+	resp   *http.Response
+	status *couchdbStatus
+	err    error
 }
 
-// newResponse analyzes the HTTP response and creates a the
-// client response type out of it.
-func newResponse(httpResp *http.Response, err error) *response {
-	resp := &response{
-		httpResp: httpResp,
-		err:      err,
+// newResultSet analyzes the HTTP response and creates a the
+// client ResultSet type out of it.
+func newResultSet(resp *http.Response, err error) *resultSet {
+	rs := &resultSet{
+		resp: resp,
+		err:  err,
 	}
-	return resp
+	return rs
 }
 
-// IsOK implements the Response interface.
-func (resp *response) IsOK() bool {
-	return resp.err == nil && (resp.httpResp.StatusCode >= 200 && resp.httpResp.StatusCode <= 299)
+// IsOK implements the resultSet interface.
+func (rs *resultSet) IsOK() bool {
+	return rs.err == nil && (rs.resp.StatusCode >= 200 && rs.resp.StatusCode <= 299)
 }
 
-// StatusCode implements the Response interface.
-func (resp *response) StatusCode() int {
-	if resp.httpResp == nil {
+// StatusCode implements the resultSet interface.
+func (rs *resultSet) StatusCode() int {
+	if rs.resp == nil {
 		return -1
 	}
-	return resp.httpResp.StatusCode
+	return rs.resp.StatusCode
 }
 
-// Error implements the Response interface.
-func (resp *response) Error() error {
-	if resp.IsOK() {
+// Error implements the resultSet interface.
+func (rs *resultSet) Error() error {
+	if rs.IsOK() {
 		return nil
 	}
-	if resp.err != nil {
-		return resp.err
+	if rs.err != nil {
+		return rs.err
 	}
-	if err := resp.readResult(); err != nil {
+	if err := rs.readStatus(); err != nil {
 		return err
 	}
-	return errors.New(ErrClientRequest, errorMessages, resp.httpResp.StatusCode, resp.result.Error, resp.result.Reason)
+	return errors.New(ErrClientRequest, errorMessages, rs.resp.StatusCode, rs.status.Error, rs.status.Reason)
 }
 
-// ID implements the Response interface.
-func (resp *response) ID() string {
-	if !resp.IsOK() {
+// ID implements the resultSet interface.
+func (rs *resultSet) ID() string {
+	if !rs.IsOK() {
 		return ""
 	}
-	if err := resp.readResult(); err != nil {
+	if err := rs.readStatus(); err != nil {
 		return ""
 	}
-	return resp.result.ID
+	return rs.status.ID
 }
 
-// Revision implements the Response interface.
-func (resp *response) Revision() string {
-	if !resp.IsOK() {
+// Revision implements the resultSet interface.
+func (rs *resultSet) Revision() string {
+	if !rs.IsOK() {
 		return ""
 	}
-	if err := resp.readResult(); err != nil {
+	if err := rs.readStatus(); err != nil {
 		return ""
 	}
-	return resp.result.Revision
+	return rs.status.Revision
 }
 
-// ResultValue implements the Response interface.
-func (resp *response) ResultValue(value interface{}) error {
-	data, err := resp.ResultData()
+// Document implements the resultSet interface.
+func (rs *resultSet) Document(value interface{}) error {
+	data, err := rs.Raw()
 	if err != nil {
 		return err
 	}
@@ -148,24 +147,24 @@ func (resp *response) ResultValue(value interface{}) error {
 	return nil
 }
 
-// ResultData implements the Response interface.
-func (resp *response) ResultData() ([]byte, error) {
-	if resp.err != nil {
-		return nil, resp.err
+// Raw implements the resultSet interface.
+func (rs *resultSet) Raw() ([]byte, error) {
+	if rs.err != nil {
+		return nil, rs.err
 	}
-	defer resp.httpResp.Body.Close()
-	body, err := ioutil.ReadAll(resp.httpResp.Body)
+	defer rs.resp.Body.Close()
+	body, err := ioutil.ReadAll(rs.resp.Body)
 	if err != nil {
 		return nil, errors.Annotate(err, ErrReadingResponseBody, errorMessages)
 	}
 	return body, nil
 }
 
-// readResult lazily loads the internal response of
-// the CouchDB.
-func (resp *response) readResult() error {
-	if resp.result == nil {
-		if err := resp.ResultValue(&resp.result); err != nil {
+// readStatus lazily loads the internal status resultSet
+// of CouchDB.
+func (rs *resultSet) readStatus() error {
+	if rs.status == nil {
+		if err := rs.Document(&rs.status); err != nil {
 			return err
 		}
 	}

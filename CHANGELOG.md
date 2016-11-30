@@ -1,5 +1,9 @@
 # Tideland Go CouchDB Client
 
+## 2016-11-30
+
+- Larger renamings for more consistent naming
+
 ## 2016-11-27
 
 - Made parameters more beautiful

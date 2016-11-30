@@ -88,6 +88,15 @@ type BulkResults []Result
 // INTERNAL DOCUMENT TYPES
 //--------------------
 
+// couchdbStatus contains internal status information CouchDB returns.
+type couchdbStatus struct {
+	OK       bool   `json:"ok"`
+	ID       string `json:"id"`
+	Revision string `json:"rev"`
+	Error    string `json:"error"`
+	Reason   string `json:"reason"`
+}
+
 // couchdbAuthentication contains user ID and password
 // for authentication.
 type couchdbAuthentication struct {

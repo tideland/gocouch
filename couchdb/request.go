@@ -92,32 +92,32 @@ func (req *request) apply(rps ...Parameter) *request {
 }
 
 // head performs a HEAD request.
-func (req *request) head() *response {
+func (req *request) head() *resultSet {
 	return req.do(methHead)
 }
 
 // get performs a GET request.
-func (req *request) get() *response {
+func (req *request) get() *resultSet {
 	return req.do(methGet)
 }
 
 // put performs a PUT request.
-func (req *request) put() *response {
+func (req *request) put() *resultSet {
 	return req.do(methPut)
 }
 
 // post performs a POST request.
-func (req *request) post() *response {
+func (req *request) post() *resultSet {
 	return req.do(methPost)
 }
 
 // delete performs a DELETE request.
-func (req *request) delete() *response {
+func (req *request) delete() *resultSet {
 	return req.do(methDelete)
 }
 
 // do performs a request.
-func (req *request) do(method string) *response {
+func (req *request) do(method string) *resultSet {
 	// Prepare URL.
 	u := &url.URL{
 		Scheme: "http",
@@ -135,14 +135,14 @@ func (req *request) do(method string) *response {
 	if req.doc != nil {
 		marshalled, err := json.Marshal(req.doc)
 		if err != nil {
-			return newResponse(nil, errors.Annotate(err, ErrMarshallingDoc, errorMessages))
+			return newResultSet(nil, errors.Annotate(err, ErrMarshallingDoc, errorMessages))
 		}
 		req.docReader = bytes.NewBuffer(marshalled)
 	}
 	// Prepare HTTP request.
 	httpReq, err := http.NewRequest(method, u.String(), req.docReader)
 	if err != nil {
-		return newResponse(nil, errors.Annotate(err, ErrPreparingRequest, errorMessages))
+		return newResultSet(nil, errors.Annotate(err, ErrPreparingRequest, errorMessages))
 	}
 	if len(req.header) > 0 {
 		httpReq.Header = req.header
@@ -152,9 +152,9 @@ func (req *request) do(method string) *response {
 	// Perform HTTP request.
 	httpResp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
-		return newResponse(nil, errors.Annotate(err, ErrPerformingRequest, errorMessages))
+		return newResultSet(nil, errors.Annotate(err, ErrPerformingRequest, errorMessages))
 	}
-	return newResponse(httpResp, nil)
+	return newResultSet(httpResp, nil)
 }
 
 // EOF
