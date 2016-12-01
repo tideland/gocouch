@@ -1,5 +1,9 @@
 # Tideland Go CouchDB Client
 
+## 2016-12-01
+
+- Added parameters *skip* and *limit* for views
+
 ## 2016-11-30
 
 - Larger renamings for more consistent naming
