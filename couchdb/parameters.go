@@ -13,6 +13,7 @@ package couchdb
 
 import (
 	"encoding/base64"
+	"strconv"
 )
 
 //--------------------
@@ -102,6 +103,19 @@ func StartEndKey(start, end string) Parameter {
 // only one key
 func OneKey(key string) Parameter {
 	return StartEndKey(key, key)
+}
+
+// SkipLimit sets the number to skip and the limit for
+// view requests.
+func SkipLimit(skip, limit int) Parameter {
+	return func(pa Parameterizable) {
+		if skip > 0 {
+			pa.SetQuery("skip", strconv.Itoa(skip))
+		}
+		if limit > 0 {
+			pa.SetQuery("limit", strconv.Itoa(limit))
+		}
+	}
 }
 
 // IncludeDocuments sets the flag for the including of found view documents.
