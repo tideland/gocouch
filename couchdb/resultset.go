@@ -171,4 +171,9 @@ func (rs *resultSet) readStatus() error {
 	return nil
 }
 
+// header returns the value of a response header.
+func (rs *resultSet) header(key string) string {
+	return rs.resp.Header.Get(key)
+}
+
 // EOF

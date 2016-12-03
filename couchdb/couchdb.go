@@ -27,12 +27,12 @@ import (
 
 // CouchDB provides the access to a database.
 type CouchDB interface {
+	// StartSession starts a cookie based session for the given user.
+	StartSession(userID, password string) (Session, error)
+
 	// AllDatabases returns a list of all database IDs
 	// of the connected server.
 	AllDatabases() ([]string, error)
-
-	// StartSession starts a cookie based session for the given user.
-	// StartSession(UserID, password string) (*Session, error)
 
 	// HasDatabase checks if the configured database exists.
 	HasDatabase() (bool, error)
@@ -118,15 +118,26 @@ func OpenPath(cfg etc.Etc, path string, rps ...Parameter) (CouchDB, error) {
 	return cdb, nil
 }
 
-// AllDatabases implements connection.
+// StartSession implements the CouchDB interface.
+func (cdb *couchdb) StartSession(userID, password string) (Session, error) {
+	authentication := couchdbAuthentication{
+		UserID:   userID,
+		Password: password,
+	}
+	req := newRequest(cdb, "/_session", authentication)
+	rs := req.post()
+	return newSession(rs)
+}
+
+// AllDatabases implements the CouchDB interface.
 func (cdb *couchdb) AllDatabases() ([]string, error) {
 	req := newRequest(cdb, "/_all_dbs", nil)
-	resp := req.get()
-	if !resp.IsOK() {
-		return nil, resp.Error()
+	rs := req.get()
+	if !rs.IsOK() {
+		return nil, rs.Error()
 	}
 	ids := []string{}
-	err := resp.Document(&ids)
+	err := rs.Document(&ids)
 	if err != nil {
 		return nil, err
 	}
@@ -136,14 +147,14 @@ func (cdb *couchdb) AllDatabases() ([]string, error) {
 // HasDatabase implements the CouchDB interface.
 func (cdb *couchdb) HasDatabase() (bool, error) {
 	req := newRequest(cdb, cdb.databasePath(), nil)
-	resp := req.head()
-	if resp.IsOK() {
+	rs := req.head()
+	if rs.IsOK() {
 		return true, nil
 	}
-	if resp.StatusCode() == StatusNotFound {
+	if rs.StatusCode() == StatusNotFound {
 		return false, nil
 	}
-	return false, resp.Error()
+	return false, rs.Error()
 }
 
 // CreateDatabase implements the CouchDB interface.
@@ -161,12 +172,12 @@ func (cdb *couchdb) DeleteDatabase() ResultSet {
 // AllDesigns implements the CouchDB interface.
 func (cdb *couchdb) AllDesigns() ([]string, error) {
 	req := newRequest(cdb, cdb.databasePath("_all_docs"), nil)
-	resp := req.apply(StartEndKey("_design/", "_design0")).get()
-	if !resp.IsOK() {
-		return nil, resp.Error()
+	rs := req.apply(StartEndKey("_design/", "_design0")).get()
+	if !rs.IsOK() {
+		return nil, rs.Error()
 	}
 	vr := viewResult{}
-	err := resp.Document(&vr)
+	err := rs.Document(&vr)
 	if err != nil {
 		return nil, err
 	}
@@ -185,12 +196,12 @@ func (cdb *couchdb) Design(id string) (Design, error) {
 // AllDocuments implements the CouchDB interface.
 func (cdb *couchdb) AllDocuments() ([]string, error) {
 	req := newRequest(cdb, cdb.databasePath("_all_docs"), nil)
-	resp := req.get()
-	if !resp.IsOK() {
-		return nil, resp.Error()
+	rs := req.get()
+	if !rs.IsOK() {
+		return nil, rs.Error()
 	}
 	vr := viewResult{}
-	err := resp.Document(&vr)
+	err := rs.Document(&vr)
 	if err != nil {
 		return nil, err
 	}
@@ -204,14 +215,14 @@ func (cdb *couchdb) AllDocuments() ([]string, error) {
 // HasDocument implements the CouchDB interface.
 func (cdb *couchdb) HasDocument(id string) (bool, error) {
 	req := newRequest(cdb, cdb.databasePath(id), nil)
-	resp := req.head()
-	if resp.IsOK() {
+	rs := req.head()
+	if rs.IsOK() {
 		return true, nil
 	}
-	if resp.StatusCode() == StatusNotFound {
+	if rs.StatusCode() == StatusNotFound {
 		return false, nil
 	}
-	return false, resp.Error()
+	return false, rs.Error()
 }
 
 // CreateDocument implements the CouchDB interface.
@@ -263,12 +274,12 @@ func (cdb *couchdb) BulkWriteDocuments(docs ...interface{}) (Statuses, error) {
 		Docs: docs,
 	}
 	req := newRequest(cdb, cdb.databasePath("_bulk_docs"), bulk)
-	resp := req.post()
-	if !resp.IsOK() {
-		return nil, resp.Error()
+	rs := req.post()
+	if !rs.IsOK() {
+		return nil, rs.Error()
 	}
 	statuses := Statuses{}
-	err := resp.Document(&statuses)
+	err := rs.Document(&statuses)
 	if err != nil {
 		return nil, err
 	}
