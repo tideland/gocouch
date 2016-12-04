@@ -12,7 +12,6 @@ package couchdb
 //--------------------
 
 import (
-	"encoding/base64"
 	"strconv"
 )
 
@@ -63,17 +62,6 @@ func Header(kvs ...KeyValue) Parameter {
 		for _, kv := range kvs {
 			pa.SetHeader(kv.Key, kv.Value)
 		}
-	}
-}
-
-// BasicAuthentication is intended for basic authentication
-// against the database.
-func BasicAuthentication(userID, password string) Parameter {
-	return func(pa Parameterizable) {
-		up := []byte(userID + ":" + password)
-		auth := "Basic " + base64.StdEncoding.EncodeToString(up)
-
-		pa.SetHeader("Authorization", auth)
 	}
 }
 

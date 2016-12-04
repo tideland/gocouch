@@ -33,21 +33,6 @@ type Statuses []Status
 // INTERNAL DOCUMENT TYPES
 //--------------------
 
-// couchdbAuthentication contains user ID and password
-// for authentication.
-type couchdbAuthentication struct {
-	UserID   string `json:"name"`
-	Password string `json:"password"`
-}
-
-// couchdRoles contains the roles of a user if the
-// authentication succeeded.
-type couchdbRoles struct {
-	OK     bool     `json:"ok"`
-	UserID string   `json:"name"`
-	Roles  []string `json:"roles"`
-}
-
 // couchdbBulkDocuments contains a number of documents added at once.
 type couchdbBulkDocuments struct {
 	Docs     []interface{} `json:"docs"`
