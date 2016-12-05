@@ -34,7 +34,11 @@ const (
 	StatusUnauthorized       = http.StatusUnauthorized
 	StatusForbidden          = http.StatusForbidden
 	StatusNotFound           = http.StatusNotFound
+	StatusMethodNotAllowed   = http.StatusMethodNotAllowed
+	StatusNotAcceptable      = http.StatusNotAcceptable
+	StatusConflict           = http.StatusConflict
 	StatusPreconditionFailed = http.StatusPreconditionFailed
+	StatusTooManyRequests    = http.StatusTooManyRequests
 
 	StatusInternalServerError = http.StatusInternalServerError
 )
@@ -66,6 +70,9 @@ type ResultSet interface {
 
 	// Raw returns the received raw data of a client request.
 	Raw() ([]byte, error)
+
+	// Header provides access to header variables.
+	Header(key string) string
 }
 
 // resultSet implements the ResultSet interface.
@@ -85,12 +92,12 @@ func newResultSet(resp *http.Response, err error) *resultSet {
 	return rs
 }
 
-// IsOK implements the resultSet interface.
+// IsOK implements the ResultSet interface.
 func (rs *resultSet) IsOK() bool {
 	return rs.err == nil && (rs.resp.StatusCode >= 200 && rs.resp.StatusCode <= 299)
 }
 
-// StatusCode implements the resultSet interface.
+// StatusCode implements the ResultSet interface.
 func (rs *resultSet) StatusCode() int {
 	if rs.resp == nil {
 		return -1
@@ -98,7 +105,7 @@ func (rs *resultSet) StatusCode() int {
 	return rs.resp.StatusCode
 }
 
-// Error implements the resultSet interface.
+// Error implements the ResultSet interface.
 func (rs *resultSet) Error() error {
 	if rs.IsOK() {
 		return nil
@@ -112,7 +119,7 @@ func (rs *resultSet) Error() error {
 	return errors.New(ErrClientRequest, errorMessages, rs.resp.StatusCode, rs.status.Error, rs.status.Reason)
 }
 
-// ID implements the resultSet interface.
+// ID implements the ResultSet interface.
 func (rs *resultSet) ID() string {
 	if !rs.IsOK() {
 		return ""
@@ -123,7 +130,7 @@ func (rs *resultSet) ID() string {
 	return rs.status.ID
 }
 
-// Revision implements the resultSet interface.
+// Revision implements the ResultSet interface.
 func (rs *resultSet) Revision() string {
 	if !rs.IsOK() {
 		return ""
@@ -134,7 +141,7 @@ func (rs *resultSet) Revision() string {
 	return rs.status.Revision
 }
 
-// Document implements the resultSet interface.
+// Document implements the ResultSet interface.
 func (rs *resultSet) Document(value interface{}) error {
 	data, err := rs.Raw()
 	if err != nil {
@@ -147,7 +154,7 @@ func (rs *resultSet) Document(value interface{}) error {
 	return nil
 }
 
-// Raw implements the resultSet interface.
+// Raw implements the ResultSet interface.
 func (rs *resultSet) Raw() ([]byte, error) {
 	if rs.err != nil {
 		return nil, rs.err
@@ -160,7 +167,12 @@ func (rs *resultSet) Raw() ([]byte, error) {
 	return body, nil
 }
 
-// readStatus lazily loads the internal status resultSet
+// Header implements the ResultSet interface.
+func (rs *resultSet) Header(key string) string {
+	return rs.resp.Header.Get(key)
+}
+
+// readStatus lazily loads the internal status result
 // of CouchDB.
 func (rs *resultSet) readStatus() error {
 	if rs.status == nil {
@@ -169,11 +181,6 @@ func (rs *resultSet) readStatus() error {
 		}
 	}
 	return nil
-}
-
-// header returns the value of a response header.
-func (rs *resultSet) header(key string) string {
-	return rs.resp.Header.Get(key)
 }
 
 // EOF

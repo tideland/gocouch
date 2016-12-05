@@ -27,9 +27,12 @@ type couchdbAuthentication struct {
 // couchdRoles contains the roles of a user if the
 // authentication succeeded.
 type couchdbRoles struct {
-	OK     bool     `json:"ok"`
-	UserID string   `json:"name"`
-	Roles  []string `json:"roles"`
+	OK       bool     `json:"ok"`
+	UserID   string   `json:"name"`
+	Password string   `json:"password_sha,omitempty"`
+	Salt     string   `json:"salt,omitempty"`
+	Type     string   `json:"type"`
+	Roles    []string `json:"roles"`
 }
 
 // EOF

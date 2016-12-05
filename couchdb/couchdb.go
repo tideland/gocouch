@@ -55,10 +55,6 @@ type CouchDB interface {
 	// DeleteDatabase removes the configured database.
 	DeleteDatabase() ResultSet
 
-	// OpenDatabase opens a different database on
-	// the same host.
-	OpenDatabase(database string) CouchDB
-
 	// AllDesigns returns the list of all design
 	// document IDs of the configured database.
 	AllDesigns() ([]string, error)
@@ -200,23 +196,13 @@ func (cdb *couchdb) DeleteDatabase() ResultSet {
 	return cdb.Delete(cdb.databasePath(), nil)
 }
 
-// OpenDatabase implements the CouchDB interface.
-func (cdb *couchdb) OpenDatabase(database string) CouchDB {
-	ccdb := &couchdb{
-		host:       cdb.host,
-		database:   database,
-		parameters: cdb.parameters,
-	}
-	return ccdb
-}
-
 // AllDesigns implements the CouchDB interface.
 func (cdb *couchdb) AllDesigns() ([]string, error) {
 	rs := cdb.Get(cdb.databasePath("_all_docs"), nil, StartEndKey("_design/", "_design0/"))
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
-	vr := viewResult{}
+	vr := couchdbViewResult{}
 	err := rs.Document(&vr)
 	if err != nil {
 		return nil, err
@@ -235,11 +221,11 @@ func (cdb *couchdb) Design(id string) (Design, error) {
 
 // AllDocuments implements the CouchDB interface.
 func (cdb *couchdb) AllDocuments() ([]string, error) {
-	rs := cdb.Get("/_all_dbs", nil)
+	rs := cdb.Get(cdb.databasePath("_all_docs"), nil)
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
-	vr := viewResult{}
+	vr := couchdbViewResult{}
 	err := rs.Document(&vr)
 	if err != nil {
 		return nil, err
@@ -321,8 +307,13 @@ func (cdb *couchdb) BulkWriteDocuments(docs []interface{}, rps ...Parameter) (St
 
 // View implements the CouchDB interface.
 func (cdb *couchdb) View(design, view string, rps ...Parameter) ViewResultSet {
-	path := cdb.databasePath("_design", design, "_view", view)
-	rs := cdb.Post(path, nil, rps...)
+	var rs ResultSet
+	req := newRequest(cdb, cdb.databasePath("_design", design, "_view", view), nil).apply(rps...)
+	if len(req.keys) > 0 {
+		rs = req.post()
+	} else {
+		rs = req.get()
+	}
 	return newView(rs)
 }
 

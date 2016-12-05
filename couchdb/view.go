@@ -102,7 +102,7 @@ type ViewResultSet interface {
 // viewResultSet implements the ViewResultSet interface.
 type viewResultSet struct {
 	rs ResultSet
-	vr *viewResult
+	vr *couchdbViewResult
 }
 
 // newView provides access to the viewResultSet data.
@@ -166,34 +166,14 @@ func (vrs *viewResultSet) readViewResult() error {
 		return vrs.Error()
 	}
 	if vrs.vr == nil {
-		vrs.vr = &viewResult{}
-		err := vrs.rs.Document(vrs.vr)
+		vr := couchdbViewResult{}
+		err := vrs.rs.Document(&vr)
 		if err != nil {
 			return err
 		}
+		vrs.vr = &vr
 	}
 	return nil
 }
-
-//--------------------
-// VIEW RESULT
-//--------------------
-
-// viewResult is a generic result of a CouchDB view.
-type viewResult struct {
-	TotalRows int      `json:"total_rows"`
-	Offset    int      `json:"offset"`
-	Rows      viewRows `json:"rows"`
-}
-
-// viewRow contains one row of a viewResultSet result.
-type viewRow struct {
-	ID       string      `json:"id"`
-	Key      interface{} `json:"key"`
-	Value    interface{} `json:"value"`
-	Document interface{} `json:"doc"`
-}
-
-type viewRows []viewRow
 
 // EOF

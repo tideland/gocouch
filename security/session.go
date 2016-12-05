@@ -47,24 +47,16 @@ func NewSession(cdb couchdb.CouchDB, userID, password string) (Session, error) {
 		UserID:   userID,
 		Password: password,
 	}
-	scdb := cdb.OpenDatabase("_session")
-}
-
-// StartSession implements the CouchDB interface.
-func (cdb *couchdb) StartSession(userID, password string) (Session, error) {
-	req := newRequest(cdb, "/_session", authentication)
-	rs := req.post()
-	return newSession(cdb, rs)
-}
-
-// newSession creates a new session instance.
-func newSession(cdb *couchdb, rs *resultSet) (*session, error) {
+	rs := cdb.Post("_session", authentication)
+	if !rs.IsOK() {
+		return nil, rs.Error()
+	}
 	roles := couchdbRoles{}
 	err := rs.Document(&roles)
 	if err != nil {
 		return nil, err
 	}
-	setCookie := rs.header("Set-Cookie")
+	setCookie := rs.Header("Set-Cookie")
 	authSession := ""
 	for _, part := range strings.Split(setCookie, ";") {
 		if strings.HasPrefix(part, "AuthSession=") {
@@ -86,16 +78,15 @@ func (s *session) UserID() string {
 }
 
 // Cookie implements the Session interface.
-func (s *session) Cookie() Parameter {
-	return func(pa Parameterizable) {
+func (s *session) Cookie() couchdb.Parameter {
+	return func(pa couchdb.Parameterizable) {
 		pa.SetHeader("Cookie", s.authSession)
 	}
 }
 
 // Stop implements the Session interface.
 func (s *session) Stop() error {
-	req := newRequest(s.cdb, "/_session", nil)
-	rs := req.apply(s.Cookie()).delete()
+	rs := s.cdb.Delete("/_session", nil, s.Cookie())
 	if !rs.IsOK() {
 		return rs.Error()
 	}

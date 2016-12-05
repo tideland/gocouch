@@ -44,6 +44,23 @@ type couchdbViewKeys struct {
 	Keys []interface{} `json:"keys"`
 }
 
+// couchdbViewResult is a generic result of a CouchDB view.
+type couchdbViewResult struct {
+	TotalRows int             `json:"total_rows"`
+	Offset    int             `json:"offset"`
+	Rows      couchdbViewRows `json:"rows"`
+}
+
+// couchdbViewRow contains one row of a view result.
+type couchdbViewRow struct {
+	ID       string      `json:"id"`
+	Key      interface{} `json:"key"`
+	Value    interface{} `json:"value"`
+	Document interface{} `json:"doc"`
+}
+
+type couchdbViewRows []couchdbViewRow
+
 // idAndRevision is used to simply retrieve ID and revision of
 // a document.
 type idAndRevision struct {

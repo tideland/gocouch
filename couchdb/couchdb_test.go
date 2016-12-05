@@ -465,7 +465,7 @@ func prepareFilledDatabase(database string, assert audit.Assertion) (couchdb.Cou
 		}
 		docs = append(docs, doc)
 	}
-	results, err := cdb.BulkWriteDocuments(docs...)
+	results, err := cdb.BulkWriteDocuments(docs)
 	assert.Nil(err)
 	for _, result := range results {
 		assert.True(result.OK)
