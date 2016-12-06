@@ -107,7 +107,7 @@ func SkipLimit(skip, limit int) Parameter {
 }
 
 // IncludeDocuments sets the flag for the including of found view documents.
-func SetIncludeDocuments() Parameter {
+func IncludeDocuments() Parameter {
 	return func(pa Parameterizable) {
 		pa.SetQuery("include_docs", "true")
 	}
