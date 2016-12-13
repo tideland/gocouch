@@ -24,6 +24,15 @@ type couchdbAuthentication struct {
 	Password string `json:"password"`
 }
 
+// couchdbUser contains the data of one user.
+type couchdbUser struct {
+	ID       string   `json:"_id"`
+	UserID   string   `json:"name"`
+	Password string   `json:"password"`
+	Type     string   `json:"type"`
+	Roles    []string `json:"roles"`
+}
+
 // couchdRoles contains the roles of a user if the
 // authentication succeeded.
 type couchdbRoles struct {
