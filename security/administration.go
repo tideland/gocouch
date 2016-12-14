@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - Security - Users
+// Tideland Go CouchDB Client - Security - Administration
 //
 // Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
 //
@@ -18,53 +18,54 @@ import (
 )
 
 //--------------------
-// USER MANAGEMENT
+// ADMINISTRATION
 //--------------------
 
-// UserManagement provides a user and role management for
+// Administration provides a user and role management for
 // a CouchDB.
-type UserManagement interface {
+type Administration interface {
 	// Create a new user.
 	CreateUser(userID, password string) error
 }
 
-// userManagement implements the UserManagement interface.
-type userManagement struct {
+// administration implements the Administration interface.
+type administration struct {
 	cdb      couchdb.CouchDB
 	userID   string
 	password string
 }
 
-// NewUserManagement create a user and role management. The
-// passed user ID and password are those of an administrator.
-func NewUserManagement(cdb couchdb.CouchDB, userID, password string) (UserManagement, error) {
-	um := &userManagement{
+// NewAdministration creates a user administration. The
+// passed user ID and password combination is an administrator.
+// If no administrator exists so far it will be created.
+func NewAdministration(cdb couchdb.CouchDB, userID, password string) (Administration, error) {
+	a := &administration{
 		cdb:      cdb,
 		userID:   userID,
 		password: password,
 	}
 	// Check if the administrator already exists.
 	config := map[string]interface{}{}
-	rs := um.cdb.Get("/_config", config)
+	rs := a.cdb.Get("/_config", config)
 	if rs.IsOK() {
 		// No administrator so far.
-		rs = um.cdb.Put("/config/admins/"+um.userID, "\""+um.password+"\"")
+		rs = a.cdb.Put("/_config/admins/"+a.userID, a.password)
 		if !rs.IsOK() {
 			return nil, rs.Error()
 		}
 	}
-	return um, nil
+	return a, nil
 }
 
-// CreateUser implements the UserManagement interface.
-func (um *userManagement) CreateUser(userID, password string) error {
+// CreateUser implements the Administration interface.
+func (a *administration) CreateUser(userID, password string) error {
 	user := &couchdbUser{
 		ID:       userDocumentID(userID),
 		UserID:   userID,
 		Password: password,
 		Type:     "user",
 	}
-	rs := um.cdb.CreateDocument(user, BasicAuthentication(um.userID, um.password))
+	rs := a.cdb.CreateDocument(user, BasicAuthentication(a.userID, a.password))
 	if !rs.IsOK() {
 		if rs.StatusCode() == couchdb.StatusConflict {
 			return errors.New(ErrUserExists, errorMessages)
