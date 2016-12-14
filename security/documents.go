@@ -14,15 +14,19 @@ package security
 import ()
 
 //--------------------
-// INTERNAL DOCUMENT TYPES
+// EXTERNAL DOCUMENT TYPES
 //--------------------
 
-// couchdbAuthentication contains user ID and password
+// User contains user ID and password
 // for authentication.
-type couchdbAuthentication struct {
+type User struct {
 	UserID   string `json:"name"`
 	Password string `json:"password"`
 }
+
+//--------------------
+// INTERNAL DOCUMENT TYPES
+//--------------------
 
 // couchdbUser contains the data of one user.
 type couchdbUser struct {

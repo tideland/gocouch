@@ -43,11 +43,11 @@ type session struct {
 
 // NewSession starts a cookie based session for the given user.
 func NewSession(cdb couchdb.CouchDB, userID, password string) (Session, error) {
-	authentication := couchdbAuthentication{
+	user := User{
 		UserID:   userID,
 		Password: password,
 	}
-	rs := cdb.Post("_session", authentication)
+	rs := cdb.Post("_session", user)
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}

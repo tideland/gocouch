@@ -18,37 +18,43 @@ import (
 )
 
 //--------------------
-// USERS
+// USER MANAGEMENT
 //--------------------
 
-// Users provides a user and role management for
+// UserManagement provides a user and role management for
 // a CouchDB.
-type Users interface {
+type UserManagement interface {
 	// Create a new user.
 	CreateUser(userID, password string) error
 }
 
-// users implements the Users interface.
-type users struct {
-	cdb couchdb.CouchDB
+// userManagement implements the UserManagement interface.
+type userManagement struct {
+	cdb      couchdb.CouchDB
+	userID   string
+	password string
 }
 
-func NewUsers(cdb couchdb.CouchDB) (Users, error) {
-	u := &users{
-		cdb: cdb,
+// NewUserManagement create a user and role management. The
+// passed user ID and password are those of an administrator.
+func NewUserManagement(cdb couchdb.CouchDB, userID, password string) (UserManagement, error) {
+	um := &userManagement{
+		cdb:      cdb,
+		userID:   userID,
+		password: password,
 	}
-	return u, nil
+	return um, nil
 }
 
-// CreateUser implements the Users interface.
-func (u *users) CreateUser(userID, password string) error {
+// CreateUser implements the UserManagement interface.
+func (um *userManagement) CreateUser(userID, password string) error {
 	user := &couchdbUser{
 		ID:       userDocumentID(userID),
 		UserID:   userID,
 		Password: password,
 		Type:     "user",
 	}
-	rs := u.cdb.CreateDocument(user)
+	rs := um.cdb.CreateDocument(user, BasicAuthentication(um.userID, um.password))
 	if !rs.IsOK() {
 		if rs.StatusCode() == couchdb.StatusConflict {
 			return errors.New(ErrUserExists, errorMessages)
