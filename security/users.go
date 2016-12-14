@@ -43,6 +43,16 @@ func NewUserManagement(cdb couchdb.CouchDB, userID, password string) (UserManage
 		userID:   userID,
 		password: password,
 	}
+	// Check if the administrator already exists.
+	config := map[string]interface{}{}
+	rs := um.cdb.Get("/_config", config)
+	if rs.IsOK() {
+		// No administrator so far.
+		rs = um.cdb.Put("/config/admins/"+um.userID, "\""+um.password+"\"")
+		if !rs.IsOK() {
+			return nil, rs.Error()
+		}
+	}
 	return um, nil
 }
 
