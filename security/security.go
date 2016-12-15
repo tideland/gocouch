@@ -34,6 +34,15 @@ func CreateAdministrator(cdb couchdb.CouchDB, session Session, userID, password 
 	return nil
 }
 
+// DeleteAdministrator deletes an administrator from the given database.
+func DeleteAdministrator(cdb couchdb.CouchDB, session Session, userID string) error {
+	rs := cdb.Delete("/_config/admins/"+userID, nil, session.Cookie())
+	if !rs.IsOK() {
+		return rs.Error()
+	}
+	return nil
+}
+
 // CreateUser adds a user to the given database.
 func CreateUser(cdb couchdb.CouchDB, session Session, userID, password string) error {
 	user := &couchdbUser{
