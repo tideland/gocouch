@@ -51,7 +51,7 @@ func CreateUser(cdb couchdb.CouchDB, session Session, userID, password string) e
 		Password: password,
 		Type:     "user",
 	}
-	rs := a.cdb.CreateDocument(user, session.Cookie())
+	rs := cdb.CreateDocument(user, session.Cookie())
 	if !rs.IsOK() {
 		if rs.StatusCode() == couchdb.StatusConflict {
 			return errors.New(ErrUserExists, errorMessages)

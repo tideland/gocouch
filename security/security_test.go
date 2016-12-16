@@ -34,17 +34,48 @@ const (
 // TESTS
 //--------------------
 
-// TestNewUserManagement tests the starting of the
-// user management and the creation of an administrator
-// if needed.
-func TestNewUserManagement(t *testing.T) {
+// TestCreateDeleteAdministrator tests the creation of the initial
+// and a second administrator and also the deletion of them.
+func TestCreateDeleteAdministrator(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb, cleanup := prepareDatabase("new-user-management", assert)
-	defer cleanup()
+	cdb := prepareCouchDB("create-delete-administrator", assert)
 
-	um, err := security.NewUserManagement(cdb, "administrator", "administrator")
+	err := security.CreateAdministrator(cdb, nil, "admin1", "admin1")
 	assert.Nil(err)
-	assert.NotNil(um)
+	defer func() {
+		// Let the administator remove himself.
+		session, err := security.NewSession(cdb, "admin1", "admin1")
+		assert.Nil(err)
+		err = security.DeleteAdministrator(cdb, session, "admin1")
+		assert.Nil(err)
+	}()
+
+	session, err := security.NewSession(cdb, "admin1", "admin1")
+	assert.Nil(err)
+	err = security.CreateAdministrator(cdb, session, "admin2", "admin2")
+	assert.Nil(err)
+	err = security.DeleteAdministrator(cdb, session, "admin2")
+	assert.Nil(err)
+}
+
+// TestCreateAdministratorNoSession tests the creation of another
+// admin if the creator has no valid session.
+func TestCreateAdministratorNoSession(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareCouchDB("create-administrator-no-session", assert)
+
+	err := security.CreateAdministrator(cdb, nil, "admin1", "admin1")
+	assert.Nil(err)
+	defer func() {
+		// Let the administator remove himself.
+		session, err := security.NewSession(cdb, "admin1", "admin1")
+		assert.Nil(err)
+		err = security.DeleteAdministrator(cdb, session, "admin1")
+		assert.Nil(err)
+	}()
+
+	err = security.CreateAdministrator(cdb, nil, "admin2", "admin2")
+	assert.ErrorMatch(err, ".*status code 401.*")
 }
 
 //--------------------
@@ -62,18 +93,17 @@ type MyDocument struct {
 	Description string `json:"description"`
 }
 
-// prepareDatabase opens the database, deletes a possible test
-// database, and creates it newly.
-func prepareDatabase(database string, assert audit.Assertion) (couchdb.CouchDB, func()) {
+// prepareCouchDB opens the DBMS for one database
+// w/o creating it. It deletes the named database to
+// avoid conflicts.
+func prepareCouchDB(database string, assert audit.Assertion) couchdb.CouchDB {
 	cfgstr := strings.Replace(TemplateDBcfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
 	assert.Nil(err)
 	cdb, err := couchdb.Open(cfg)
 	assert.Nil(err)
-	resp := cdb.DeleteDatabase()
-	resp = cdb.CreateDatabase()
-	assert.True(resp.IsOK())
-	return cdb, func() { cdb.DeleteDatabase() }
+	cdb.DeleteDatabase()
+	return cdb
 }
 
 // EOF
