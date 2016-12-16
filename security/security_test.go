@@ -34,13 +34,13 @@ const (
 // TESTS
 //--------------------
 
-// TestCreateDeleteAdministrator tests the creation of the initial
+// TestWriteDeleteAdministrator tests the creation of the initial
 // and a second administrator and also the deletion of them.
-func TestCreateDeleteAdministrator(t *testing.T) {
+func TestWriteDeleteAdministrator(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("create-delete-administrator", assert)
+	cdb := prepareCouchDB("write-delete-administrator", assert)
 
-	err := security.CreateAdministrator(cdb, nil, "admin1", "admin1")
+	err := security.WriteAdministrator(cdb, nil, "admin1", "admin1")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
@@ -52,19 +52,49 @@ func TestCreateDeleteAdministrator(t *testing.T) {
 
 	session, err := security.NewSession(cdb, "admin1", "admin1")
 	assert.Nil(err)
-	err = security.CreateAdministrator(cdb, session, "admin2", "admin2")
+	err = security.WriteAdministrator(cdb, session, "admin2", "admin2")
 	assert.Nil(err)
 	err = security.DeleteAdministrator(cdb, session, "admin2")
 	assert.Nil(err)
 }
 
-// TestCreateAdministratorNoSession tests the creation of another
-// admin if the creator has no valid session.
-func TestCreateAdministratorNoSession(t *testing.T) {
+// TestHasAdministrator tests the check for an administrator.
+func TestHasAdministrator(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("create-administrator-no-session", assert)
+	cdb := prepareCouchDB("has-administrator", assert)
 
-	err := security.CreateAdministrator(cdb, nil, "admin1", "admin1")
+	ok, err := security.HasAdministrator(cdb, nil, "admin")
+	assert.Nil(err)
+	assert.False(ok)
+
+	err = security.WriteAdministrator(cdb, nil, "admin", "admin")
+	assert.Nil(err)
+	defer func() {
+		// Let the administator remove himself.
+		session, err := security.NewSession(cdb, "admin", "admin")
+		assert.Nil(err)
+		err = security.DeleteAdministrator(cdb, session, "admin")
+		assert.Nil(err)
+	}()
+
+	ok, err = security.HasAdministrator(cdb, nil, "admin")
+	assert.ErrorMatch(err, ".*status code 401.*")
+	assert.False(ok)
+
+	session, err := security.NewSession(cdb, "admin", "admin")
+	assert.Nil(err)
+	ok, err = security.HasAdministrator(cdb, session, "admin")
+	assert.Nil(err)
+	assert.True(ok)
+}
+
+// TestWriteAdministratorNoSession tests the creation of another
+// admin if the creator has no valid session.
+func TestWriteAdministratorNoSession(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareCouchDB("write-administrator-no-session", assert)
+
+	err := security.WriteAdministrator(cdb, nil, "admin1", "admin1")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
@@ -74,7 +104,7 @@ func TestCreateAdministratorNoSession(t *testing.T) {
 		assert.Nil(err)
 	}()
 
-	err = security.CreateAdministrator(cdb, nil, "admin2", "admin2")
+	err = security.WriteAdministrator(cdb, nil, "admin2", "admin2")
 	assert.ErrorMatch(err, ".*status code 401.*")
 }
 

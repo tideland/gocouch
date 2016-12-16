@@ -21,8 +21,24 @@ import (
 // SECURITY FUNCTIONS
 //--------------------
 
-// CreateAdministrator adds an administrator to the given database.
-func CreateAdministrator(cdb couchdb.CouchDB, session Session, userID, password string) error {
+// HasAdministrator checks if a given administrator account exists.
+func HasAdministrator(cdb couchdb.CouchDB, session Session, userID string) (bool, error) {
+	params := []couchdb.Parameter{}
+	if session != nil {
+		params = append(params, session.Cookie())
+	}
+	rs := cdb.Get("/_config/admins/"+userID, nil, params...)
+	if !rs.IsOK() {
+		if rs.StatusCode() == couchdb.StatusNotFound {
+			return false, nil
+		}
+		return false, rs.Error()
+	}
+	return true, nil
+}
+
+// WriteAdministrator writes in administrator to the given database.
+func WriteAdministrator(cdb couchdb.CouchDB, session Session, userID, password string) error {
 	params := []couchdb.Parameter{}
 	if session != nil {
 		params = append(params, session.Cookie())
