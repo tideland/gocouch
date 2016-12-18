@@ -46,6 +46,9 @@ type CouchDB interface {
 	// of the connected server.
 	AllDatabases() ([]string, error)
 
+	// Database returns the name of the database.
+	Database() string
+
 	// HasDatabase checks if the configured database exists.
 	HasDatabase() (bool, error)
 
@@ -172,6 +175,11 @@ func (cdb *couchdb) AllDatabases() ([]string, error) {
 		return nil, err
 	}
 	return ids, nil
+}
+
+// Database implements the CouchDB interface.
+func (cdb *couchdb) Database() string {
+	return cdb.database
 }
 
 // HasDatabase implements the CouchDB interface.

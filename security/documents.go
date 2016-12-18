@@ -24,6 +24,20 @@ type User struct {
 	Password string `json:"password"`
 }
 
+// UserIDs contains user IDs and roles for
+// administrators and users.
+type UserIDsRoles struct {
+	UserIDs []string `json:"names,omitempty"`
+	Roles   []string `json:"roles,omitempty"`
+}
+
+// Security contains administrators and
+// members for one database.
+type Security struct {
+	Admins  UserIDsRoles `json:"admins,omitempty"`
+	Members UserIDsRoles `json:"members,omitempty"`
+}
+
 //--------------------
 // INTERNAL DOCUMENT TYPES
 //--------------------

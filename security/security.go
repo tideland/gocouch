@@ -59,6 +59,36 @@ func DeleteAdministrator(cdb couchdb.CouchDB, session Session, userID string) er
 	return nil
 }
 
+// ReadSecurity returns the security for the given database.
+func ReadSecurity(cdb couchdb.CouchDB, session Session) (*Security, error) {
+	path := "/" + cdb.Database() + "/_security"
+	rs := cdb.ReadDocument(path, session.Cookie())
+	if !rs.IsOK() {
+		return nil, rs.Error()
+	}
+	var security Security
+	err := rs.Document(&security)
+	if err != nil {
+		return nil, err
+	}
+	return &security, nil
+}
+
+// WriteSecurity writes new or changed security data to
+// the given database.
+func WriteSecurity(cdb couchdb.CouchDB, session Session, security Security) error {
+	params := []couchdb.Parameter{}
+	if session != nil {
+		params = append(params, session.Cookie())
+	}
+	path := "/" + cdb.Database() + "/_security"
+	rs := cdb.Put(path, security, params...)
+	if !rs.IsOK() {
+		return rs.Error()
+	}
+	return nil
+}
+
 // CreateUser adds a user to the given database.
 func CreateUser(cdb couchdb.CouchDB, session Session, userID, password string) error {
 	user := &couchdbUser{

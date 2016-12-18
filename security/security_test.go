@@ -34,13 +34,17 @@ const (
 // TESTS
 //--------------------
 
-// TestWriteDeleteAdministrator tests the creation of the initial
-// and a second administrator and also the deletion of them.
-func TestWriteDeleteAdministrator(t *testing.T) {
+// TestAdministraotor tests the administrator related functions.
+func TestAdministrator(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("write-delete-administrator", assert)
+	cdb := prepareCouchDB("administrator", assert)
 
-	err := security.WriteAdministrator(cdb, nil, "admin1", "admin1")
+	// Check first admin before it exists.
+	ok, err := security.HasAdministrator(cdb, nil, "admin1")
+	assert.Nil(err)
+	assert.False(ok)
+
+	err = security.WriteAdministrator(cdb, nil, "admin1", "admin1")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
@@ -50,62 +54,60 @@ func TestWriteDeleteAdministrator(t *testing.T) {
 		assert.Nil(err)
 	}()
 
+	// Check first admin after creation without session.
+	ok, err = security.HasAdministrator(cdb, nil, "admin1")
+	assert.ErrorMatch(err, ".*status code 401.*")
+	assert.False(ok)
+
+	// Check first admin after creation with session.
 	session, err := security.NewSession(cdb, "admin1", "admin1")
 	assert.Nil(err)
-	err = security.WriteAdministrator(cdb, session, "admin2", "admin2")
-	assert.Nil(err)
-	err = security.DeleteAdministrator(cdb, session, "admin2")
-	assert.Nil(err)
-}
-
-// TestHasAdministrator tests the check for an administrator.
-func TestHasAdministrator(t *testing.T) {
-	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("has-administrator", assert)
-
-	ok, err := security.HasAdministrator(cdb, nil, "admin")
-	assert.Nil(err)
-	assert.False(ok)
-
-	err = security.WriteAdministrator(cdb, nil, "admin", "admin")
-	assert.Nil(err)
-	defer func() {
-		// Let the administator remove himself.
-		session, err := security.NewSession(cdb, "admin", "admin")
-		assert.Nil(err)
-		err = security.DeleteAdministrator(cdb, session, "admin")
-		assert.Nil(err)
-	}()
-
-	ok, err = security.HasAdministrator(cdb, nil, "admin")
-	assert.ErrorMatch(err, ".*status code 401.*")
-	assert.False(ok)
-
-	session, err := security.NewSession(cdb, "admin", "admin")
-	assert.Nil(err)
-	ok, err = security.HasAdministrator(cdb, session, "admin")
+	ok, err = security.HasAdministrator(cdb, session, "admin1")
 	assert.Nil(err)
 	assert.True(ok)
-}
 
-// TestWriteAdministratorNoSession tests the creation of another
-// admin if the creator has no valid session.
-func TestWriteAdministratorNoSession(t *testing.T) {
-	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("write-administrator-no-session", assert)
-
-	err := security.WriteAdministrator(cdb, nil, "admin1", "admin1")
-	assert.Nil(err)
-	defer func() {
-		// Let the administator remove himself.
-		session, err := security.NewSession(cdb, "admin1", "admin1")
-		assert.Nil(err)
-		err = security.DeleteAdministrator(cdb, session, "admin1")
-		assert.Nil(err)
-	}()
-
+	// Now care for second administrator, first withour session,
+	// then with.
 	err = security.WriteAdministrator(cdb, nil, "admin2", "admin2")
 	assert.ErrorMatch(err, ".*status code 401.*")
+
+	err = security.WriteAdministrator(cdb, session, "admin2", "admin2")
+	assert.Nil(err)
+
+	ok, err = security.HasAdministrator(cdb, session, "admin2")
+	assert.Nil(err)
+	assert.True(ok)
+
+	err = security.DeleteAdministrator(cdb, session, "admin2")
+	assert.Nil(err)
+
+	ok, err = security.HasAdministrator(cdb, session, "admin2")
+	assert.Nil(err)
+	assert.False(ok)
+}
+
+// TestSecurity tests the security related functions.
+func TestSecurity(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareCouchDB("security", assert)
+
+	// Without database and admin.
+	in := security.Security{
+		Admins: security.UserIDsRoles{
+			UserIDs: []string{"admin"},
+		},
+	}
+	err := security.WriteSecurity(cdb, nil, in)
+	assert.ErrorMatch(err, ".*status code 404.*")
+
+	// With database and without admin.
+	rs := cdb.CreateDatabase()
+	assert.True(rs.IsOK())
+	defer func() {
+		cdb.DeleteDatabase()
+	}()
+	err = security.WriteSecurity(cdb, nil, in)
+	assert.Nil(err)
 }
 
 //--------------------
