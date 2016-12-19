@@ -20,10 +20,12 @@ import (
 //--------------------
 
 const (
-	ErrUserExists = iota + 1
+	ErrNoSession = iota + 1
+	ErrUserExists
 )
 
 var errorMessages = errors.Messages{
+	ErrNoSession:  "command needs authenticated session",
 	ErrUserExists: "user already exists",
 }
 

@@ -37,7 +37,7 @@ const (
 // TestAdministraotor tests the administrator related functions.
 func TestAdministrator(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("administrator", assert)
+	cdb := prepareDatabase("administrator", assert)
 
 	// Check first admin before it exists.
 	ok, err := security.HasAdministrator(cdb, nil, "admin1")
@@ -89,7 +89,7 @@ func TestAdministrator(t *testing.T) {
 // TestSecurity tests the security related functions.
 func TestSecurity(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb := prepareCouchDB("security", assert)
+	cdb := prepareDatabase("security", assert)
 
 	// Without database and admin.
 	in := security.Security{
@@ -98,37 +98,25 @@ func TestSecurity(t *testing.T) {
 		},
 	}
 	err := security.WriteSecurity(cdb, nil, in)
-	assert.ErrorMatch(err, ".*status code 404.*")
+	assert.ErrorMatch(err, ".*command needs authenticated session.*")
 
 	// With database and without admin.
 	rs := cdb.CreateDatabase()
-	assert.True(rs.IsOK())
+	assert.Nil(rs.Error())
 	defer func() {
 		cdb.DeleteDatabase()
 	}()
 	err = security.WriteSecurity(cdb, nil, in)
-	assert.Nil(err)
+	assert.ErrorMatch(err, ".*command needs authenticated session.*")
 }
 
 //--------------------
 // HELPERS
 //--------------------
 
-// MyDocument is used for the tests.
-type MyDocument struct {
-	DocumentID       string `json:"_id,omitempty"`
-	DocumentRevision string `json:"_rev,omitempty"`
-
-	Name        string `json:"name"`
-	Age         int    `json:"age"`
-	Active      bool   `json:"active"`
-	Description string `json:"description"`
-}
-
-// prepareCouchDB opens the DBMS for one database
-// w/o creating it. It deletes the named database to
-// avoid conflicts.
-func prepareCouchDB(database string, assert audit.Assertion) couchdb.CouchDB {
+// prepareDatabase opens the database and deletes a
+// possible test database.
+func prepareDatabase(database string, assert audit.Assertion) couchdb.CouchDB {
 	cfgstr := strings.Replace(TemplateDBcfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
 	assert.Nil(err)

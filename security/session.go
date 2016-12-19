@@ -81,6 +81,7 @@ func (s *session) UserID() string {
 func (s *session) Cookie() couchdb.Parameter {
 	return func(pa couchdb.Parameterizable) {
 		pa.SetHeader("Cookie", s.authSession)
+		pa.SetHeader("X-CouchDB-WWW-Authenticate", "Cookie")
 	}
 }
 

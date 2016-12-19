@@ -144,6 +144,7 @@ func (req *request) do(method string) *resultSet {
 	if err != nil {
 		return newResultSet(nil, errors.Annotate(err, ErrPreparingRequest, errorMessages))
 	}
+	httpReq.Close = true
 	if len(req.header) > 0 {
 		httpReq.Header = req.header
 	}
