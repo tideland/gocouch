@@ -84,9 +84,9 @@ func (req *request) AddKeys(keys ...interface{}) {
 }
 
 // apply applies a list of parameters to the request.
-func (req *request) apply(rps ...Parameter) *request {
-	for _, rp := range rps {
-		rp(req)
+func (req *request) apply(params ...Parameter) *request {
+	for _, param := range params {
+		param(req)
 	}
 	return req
 }

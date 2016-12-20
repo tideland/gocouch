@@ -40,48 +40,48 @@ func TestAdministrator(t *testing.T) {
 	cdb := prepareDatabase("administrator", assert)
 
 	// Check first admin before it exists.
-	ok, err := security.HasAdministrator(cdb, nil, "admin1")
+	ok, err := security.HasAdministrator(cdb, "admin1")
 	assert.Nil(err)
 	assert.False(ok)
 
-	err = security.WriteAdministrator(cdb, nil, "admin1", "admin1")
+	err = security.WriteAdministrator(cdb, "admin1", "admin1")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
 		session, err := security.NewSession(cdb, "admin1", "admin1")
 		assert.Nil(err)
-		err = security.DeleteAdministrator(cdb, session, "admin1")
+		err = security.DeleteAdministrator(cdb, "admin1", session.Cookie())
 		assert.Nil(err)
 	}()
 
 	// Check first admin after creation without session.
-	ok, err = security.HasAdministrator(cdb, nil, "admin1")
+	ok, err = security.HasAdministrator(cdb, "admin1")
 	assert.ErrorMatch(err, ".*status code 401.*")
 	assert.False(ok)
 
 	// Check first admin after creation with session.
 	session, err := security.NewSession(cdb, "admin1", "admin1")
 	assert.Nil(err)
-	ok, err = security.HasAdministrator(cdb, session, "admin1")
+	ok, err = security.HasAdministrator(cdb, "admin1", session.Cookie())
 	assert.Nil(err)
 	assert.True(ok)
 
 	// Now care for second administrator, first withour session,
 	// then with.
-	err = security.WriteAdministrator(cdb, nil, "admin2", "admin2")
+	err = security.WriteAdministrator(cdb, "admin2", "admin2")
 	assert.ErrorMatch(err, ".*status code 401.*")
 
-	err = security.WriteAdministrator(cdb, session, "admin2", "admin2")
+	err = security.WriteAdministrator(cdb, "admin2", "admin2", session.Cookie())
 	assert.Nil(err)
 
-	ok, err = security.HasAdministrator(cdb, session, "admin2")
+	ok, err = security.HasAdministrator(cdb, "admin2", session.Cookie())
 	assert.Nil(err)
 	assert.True(ok)
 
-	err = security.DeleteAdministrator(cdb, session, "admin2")
+	err = security.DeleteAdministrator(cdb, "admin2", session.Cookie())
 	assert.Nil(err)
 
-	ok, err = security.HasAdministrator(cdb, session, "admin2")
+	ok, err = security.HasAdministrator(cdb, "admin2", session.Cookie())
 	assert.Nil(err)
 	assert.False(ok)
 }
@@ -91,23 +91,50 @@ func TestSecurity(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase("security", assert)
 
-	// Without database and admin.
+	// Without database and authentication.
 	in := security.Security{
 		Admins: security.UserIDsRoles{
 			UserIDs: []string{"admin"},
 		},
 	}
-	err := security.WriteSecurity(cdb, nil, in)
-	assert.ErrorMatch(err, ".*command needs authenticated session.*")
+	err := security.WriteSecurity(cdb, in)
+	assert.ErrorMatch(err, ".*status code 404.*")
 
-	// With database and without admin.
-	rs := cdb.CreateDatabase()
-	assert.Nil(rs.Error())
+	// Without database but with authentication.
+	err = security.WriteAdministrator(cdb, "admin", "admin")
+	assert.Nil(err)
 	defer func() {
-		cdb.DeleteDatabase()
+		// Let the administator remove himself.
+		session, err := security.NewSession(cdb, "admin", "admin")
+		assert.Nil(err)
+		err = security.DeleteAdministrator(cdb, "admin", session.Cookie())
+		assert.Nil(err)
 	}()
-	err = security.WriteSecurity(cdb, nil, in)
-	assert.ErrorMatch(err, ".*command needs authenticated session.*")
+	session, err := security.NewSession(cdb, "admin", "admin")
+	assert.Nil(err)
+	err = security.WriteSecurity(cdb, in, session.Cookie())
+	assert.ErrorMatch(err, ".*status code 404.*")
+
+	// With database and without authentication.
+	rs := cdb.CreateDatabase()
+	assert.ErrorMatch(rs.Error(), ".*status code 401.*")
+	rs = cdb.CreateDatabase(session.Cookie())
+	assert.True(rs.IsOK())
+	defer func() {
+		rs := cdb.DeleteDatabase(session.Cookie())
+		assert.True(rs.IsOK())
+	}()
+	err = security.WriteSecurity(cdb, in)
+	assert.ErrorMatch(err, ".*status code 401.*")
+
+	// With database and authentication.
+	err = security.WriteSecurity(cdb, in, session.Cookie())
+	assert.Nil(err)
+
+	// Now read the security information.
+	out, err := security.ReadSecurity(cdb, session.Cookie())
+	assert.Nil(err)
+	assert.Equal(out.Admins, in.Admins)
 }
 
 //--------------------
