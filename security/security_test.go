@@ -78,10 +78,11 @@ func TestAdministrator(t *testing.T) {
 	assert.Nil(err)
 	assert.True(ok)
 
-	err = security.DeleteAdministrator(cdb, "admin2", session.Cookie())
+	auth := security.BasicAuthentication("admin1", "admin1")
+	err = security.DeleteAdministrator(cdb, "admin2", auth)
 	assert.Nil(err)
 
-	ok, err = security.HasAdministrator(cdb, "admin2", session.Cookie())
+	ok, err = security.HasAdministrator(cdb, "admin2", auth)
 	assert.Nil(err)
 	assert.False(ok)
 }
@@ -132,7 +133,7 @@ func TestSecurity(t *testing.T) {
 	assert.Nil(err)
 
 	// Now read the security information.
-	out, err := security.ReadSecurity(cdb, session.Cookie())
+	out, err := security.ReadSecurity(cdb, security.BasicAuthentication("admin", "admin"))
 	assert.Nil(err)
 	assert.Equal(out.Admins, in.Admins)
 }
