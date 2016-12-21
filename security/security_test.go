@@ -87,6 +87,26 @@ func TestAdministrator(t *testing.T) {
 	assert.False(ok)
 }
 
+// TestUser tests the user management related functions.
+func TestUser(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase("security", assert)
+
+	ok, err := security.HasUser(cdb, "user1")
+	assert.Nil(err)
+	assert.False(ok)
+
+	err = security.WriteUser(cdb, "user1", "user1", []string{"developer"})
+	assert.Nil(err)
+
+	ok, err = security.HasUser(cdb, "user1")
+	assert.Nil(err)
+	assert.True(ok)
+
+	err = security.DeleteUser(cdb, "user1")
+	assert.Nil(err)
+}
+
 // TestSecurity tests the security related functions.
 func TestSecurity(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
