@@ -18,10 +18,15 @@ import ()
 //--------------------
 
 // User contains user ID and password
-// for authentication.
+// for user management and authentication.
 type User struct {
-	UserID   string `json:"name"`
-	Password string `json:"password"`
+	DocumentID       string `json:"_id,omitempty"`
+	DocumentRevision string `json:"_rev,omitempty"`
+
+	UserID   string   `json:"name"`
+	Password string   `json:"password"`
+	Type     string   `json:"type"`
+	Roles    []string `json:"roles"`
 }
 
 // UserIDs contains user IDs and roles for
@@ -41,15 +46,6 @@ type Security struct {
 //--------------------
 // INTERNAL DOCUMENT TYPES
 //--------------------
-
-// couchdbUser contains the data of one user.
-type couchdbUser struct {
-	ID       string   `json:"_id"`
-	UserID   string   `json:"name"`
-	Password string   `json:"password"`
-	Type     string   `json:"type"`
-	Roles    []string `json:"roles"`
-}
 
 // couchdRoles contains the roles of a user if the
 // authentication succeeded.

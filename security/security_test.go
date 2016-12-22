@@ -92,18 +92,23 @@ func TestUser(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb := prepareDatabase("security", assert)
 
-	ok, err := security.HasUser(cdb, "user1")
-	assert.Nil(err)
-	assert.False(ok)
+	userA, err := security.ReadUser(cdb, "user1")
+	assert.Nil(userA)
+	assert.ErrorMatch(err, ".*status code 404.*")
 
-	err = security.WriteUser(cdb, "user1", "user1", []string{"developer"})
+	userB := &security.User{
+		UserID:   "user1",
+		Password: "user1",
+		Roles:    []string{"developer"},
+	}
+	err = security.CreateUser(cdb, userB)
 	assert.Nil(err)
 
-	ok, err = security.HasUser(cdb, "user1")
+	userA, err = security.ReadUser(cdb, "user1")
 	assert.Nil(err)
-	assert.True(ok)
+	assert.Equal(userA.UserID, "user1")
 
-	err = security.DeleteUser(cdb, "user1")
+	err = security.DeleteUser(cdb, userA)
 	assert.Nil(err)
 }
 

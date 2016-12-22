@@ -27,6 +27,12 @@ import (
 
 // CouchDB provides the access to a database.
 type CouchDB interface {
+	// Path creates a document path starting at root.
+	Path(parts ...string) string
+
+	// DatabasePath creates a document path for the database.
+	DatabasePath(parts ...string) string
+
 	// Head performs a GET request against the configured database.
 	Head(path string, doc interface{}, params ...Parameter) ResultSet
 
@@ -45,9 +51,6 @@ type CouchDB interface {
 	// AllDatabases returns a list of all database IDs
 	// of the connected server.
 	AllDatabases() ([]string, error)
-
-	// Database returns the name of the database.
-	Database() string
 
 	// HasDatabase checks if the configured database exists.
 	HasDatabase() (bool, error)
@@ -133,6 +136,16 @@ func OpenPath(cfg etc.Etc, path string, params ...Parameter) (CouchDB, error) {
 	return cdb, nil
 }
 
+// Path implements the CouchDB interface.
+func (cdb *couchdb) Path(parts ...string) string {
+	return strings.Join(append([]string{""}, parts...), "/")
+}
+
+// DatabasePath implements the CouchDB interface.
+func (cdb *couchdb) DatabasePath(parts ...string) string {
+	return cdb.Path(append([]string{cdb.database}, parts...)...)
+}
+
 // Head implements the CouchDB interface.
 func (cdb *couchdb) Head(path string, doc interface{}, params ...Parameter) ResultSet {
 	req := newRequest(cdb, path, doc)
@@ -177,14 +190,9 @@ func (cdb *couchdb) AllDatabases() ([]string, error) {
 	return ids, nil
 }
 
-// Database implements the CouchDB interface.
-func (cdb *couchdb) Database() string {
-	return cdb.database
-}
-
 // HasDatabase implements the CouchDB interface.
 func (cdb *couchdb) HasDatabase() (bool, error) {
-	rs := cdb.Head(cdb.databasePath(), nil)
+	rs := cdb.Head(cdb.DatabasePath(), nil)
 	if rs.IsOK() {
 		return true, nil
 	}
@@ -196,17 +204,17 @@ func (cdb *couchdb) HasDatabase() (bool, error) {
 
 // CreateDatabase implements the CouchDB interface.
 func (cdb *couchdb) CreateDatabase(params ...Parameter) ResultSet {
-	return cdb.Put(cdb.databasePath(), nil, params...)
+	return cdb.Put(cdb.DatabasePath(), nil, params...)
 }
 
 // DeleteDatabase implements the CouchDB interface.
 func (cdb *couchdb) DeleteDatabase(params ...Parameter) ResultSet {
-	return cdb.Delete(cdb.databasePath(), nil, params...)
+	return cdb.Delete(cdb.DatabasePath(), nil, params...)
 }
 
 // AllDesigns implements the CouchDB interface.
 func (cdb *couchdb) AllDesigns() ([]string, error) {
-	rs := cdb.Get(cdb.databasePath("_all_docs"), nil, StartEndKey("_design/", "_design0/"))
+	rs := cdb.Get(cdb.DatabasePath("_all_docs"), nil, StartEndKey("_design/", "_design0/"))
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
@@ -229,7 +237,7 @@ func (cdb *couchdb) Design(id string) (Design, error) {
 
 // AllDocuments implements the CouchDB interface.
 func (cdb *couchdb) AllDocuments() ([]string, error) {
-	rs := cdb.Get(cdb.databasePath("_all_docs"), nil)
+	rs := cdb.Get(cdb.DatabasePath("_all_docs"), nil)
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
@@ -247,7 +255,7 @@ func (cdb *couchdb) AllDocuments() ([]string, error) {
 
 // HasDocument implements the CouchDB interface.
 func (cdb *couchdb) HasDocument(id string) (bool, error) {
-	rs := cdb.Head(cdb.databasePath(id), nil)
+	rs := cdb.Head(cdb.DatabasePath(id), nil)
 	if rs.IsOK() {
 		return true, nil
 	}
@@ -266,12 +274,12 @@ func (cdb *couchdb) CreateDocument(doc interface{}, params ...Parameter) ResultS
 	if id == "" {
 		id = identifier.NewUUID().ShortString()
 	}
-	return cdb.Put(cdb.databasePath(id), doc, params...)
+	return cdb.Put(cdb.DatabasePath(id), doc, params...)
 }
 
 // ReadDocument implements the CouchDB interface.
 func (cdb *couchdb) ReadDocument(id string, params ...Parameter) ResultSet {
-	return cdb.Get(cdb.databasePath(id), nil, params...)
+	return cdb.Get(cdb.DatabasePath(id), nil, params...)
 }
 
 // UpdateDocument implements the CouchDB interface.
@@ -283,7 +291,7 @@ func (cdb *couchdb) UpdateDocument(doc interface{}, params ...Parameter) ResultS
 	if id == "" {
 		return newResultSet(nil, errors.New(ErrNoIdentifier, errorMessages))
 	}
-	return cdb.Put(cdb.databasePath(id), doc, params...)
+	return cdb.Put(cdb.DatabasePath(id), doc, params...)
 }
 
 // DeleteDocument implements the CouchDB interface.
@@ -293,7 +301,7 @@ func (cdb *couchdb) DeleteDocument(doc interface{}, params ...Parameter) ResultS
 		return newResultSet(nil, err)
 	}
 	params = append(params, Revision(rev))
-	return cdb.Delete(cdb.databasePath(id), nil, params...)
+	return cdb.Delete(cdb.DatabasePath(id), nil, params...)
 }
 
 // BulkWriteDocuments implements the CouchDB interface.
@@ -301,7 +309,7 @@ func (cdb *couchdb) BulkWriteDocuments(docs []interface{}, params ...Parameter) 
 	bulk := &couchdbBulkDocuments{
 		Docs: docs,
 	}
-	rs := cdb.Post(cdb.databasePath("_bulk_docs"), bulk, params...)
+	rs := cdb.Post(cdb.DatabasePath("_bulk_docs"), bulk, params...)
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
@@ -316,20 +324,13 @@ func (cdb *couchdb) BulkWriteDocuments(docs []interface{}, params ...Parameter) 
 // View implements the CouchDB interface.
 func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet {
 	var rs ResultSet
-	req := newRequest(cdb, cdb.databasePath("_design", design, "_view", view), nil).apply(params...)
+	req := newRequest(cdb, cdb.DatabasePath("_design", design, "_view", view), nil).apply(params...)
 	if len(req.keys) > 0 {
 		rs = req.post()
 	} else {
 		rs = req.get()
 	}
 	return newView(rs)
-}
-
-// databasePath creates a path containing the passed
-// elements based on the path of the database.
-func (cdb *couchdb) databasePath(parts ...string) string {
-	fullParts := append([]string{cdb.database}, parts...)
-	return "/" + strings.Join(fullParts, "/")
 }
 
 // idAndRevision retrieves the ID and the revision of the
