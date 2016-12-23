@@ -19,11 +19,14 @@ import (
 // CONSTANTS
 //--------------------
 
+// Error codes of the package.
 const (
 	ErrNoSession = iota + 1
 	ErrUserExists
 )
 
+// errorMessages contains the messages for the
+// individual error codes.
 var errorMessages = errors.Messages{
 	ErrNoSession:  "command needs authenticated session",
 	ErrUserExists: "user already exists",

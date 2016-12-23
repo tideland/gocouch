@@ -11,8 +11,6 @@ package security
 // IMPORTS
 //--------------------
 
-import ()
-
 //--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
@@ -25,11 +23,11 @@ type User struct {
 
 	UserID   string   `json:"name"`
 	Password string   `json:"password"`
-	Type     string   `json:"type"`
-	Roles    []string `json:"roles"`
+	Type     string   `json:"type,omitempty"`
+	Roles    []string `json:"roles,omitempty"`
 }
 
-// UserIDs contains user IDs and roles for
+// UserIDsRoles contains user IDs and roles for
 // administrators and users.
 type UserIDsRoles struct {
 	UserIDs []string `json:"names,omitempty"`

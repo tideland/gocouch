@@ -163,9 +163,90 @@ func TestSecurity(t *testing.T) {
 	assert.Equal(out.Admins, in.Admins)
 }
 
+// TestScenario tests a scenario with administrator, user,
+// amd unauthorized access to the database.
+func TestScenario(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb := prepareDatabase("scenario", assert)
+
+	// Create administrator.
+	err := security.WriteAdministrator(cdb, "admin", "admin")
+	assert.Nil(err)
+	session, err := security.NewSession(cdb, "admin", "admin")
+	assert.Nil(err)
+	defer func() {
+		// Let the administator remove himself.
+		err = security.DeleteAdministrator(cdb, "admin", session.Cookie())
+		assert.Nil(err)
+	}()
+
+	// Create users.
+	user := &security.User{
+		UserID:   "user",
+		Password: "user",
+		Roles:    []string{"developer"},
+	}
+	err = security.CreateUser(cdb, user, session.Cookie())
+	assert.Nil(err)
+	user = &security.User{
+		UserID:   "somebody",
+		Password: "somebody",
+		Roles:    []string{"visitors"},
+	}
+	err = security.CreateUser(cdb, user, session.Cookie())
+	assert.Nil(err)
+	defer func() {
+		user, err := security.ReadUser(cdb, "user", session.Cookie())
+		assert.Nil(err)
+		err = security.DeleteUser(cdb, user, session.Cookie())
+		assert.Nil(err)
+		user, err = security.ReadUser(cdb, "somebody", session.Cookie())
+		assert.Nil(err)
+		err = security.DeleteUser(cdb, user, session.Cookie())
+		assert.Nil(err)
+	}()
+
+	// Create database.
+	rs := cdb.CreateDatabase(session.Cookie())
+	assert.True(rs.IsOK())
+	defer func() {
+		rs := cdb.DeleteDatabase(session.Cookie())
+		assert.True(rs.IsOK())
+	}()
+
+	// Add security.
+	sec := security.Security{
+		Admins: security.UserIDsRoles{
+			UserIDs: []string{"user"},
+		},
+	}
+	err = security.WriteSecurity(cdb, sec, session.Cookie())
+	assert.Nil(err)
+
+	// Add document.
+	doc := MyDocument{
+		DocumentID: "foo",
+		Data:       "foo",
+	}
+	rs = cdb.CreateDocument(doc)
+	assert.False(rs.IsOK())
+	rs = cdb.CreateDocument(doc, security.BasicAuthentication("somebody", "somebody"))
+	assert.False(rs.IsOK())
+	rs = cdb.CreateDocument(doc, security.BasicAuthentication("user", "user"))
+	assert.True(rs.IsOK())
+}
+
 //--------------------
 // HELPERS
 //--------------------
+
+// MyDocument is used for the tests.
+type MyDocument struct {
+	DocumentID       string `json:"_id,omitempty"`
+	DocumentRevision string `json:"_rev,omitempty"`
+
+	Data string `json:"data"`
+}
 
 // prepareDatabase opens the database and deletes a
 // possible test database.
