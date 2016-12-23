@@ -217,6 +217,9 @@ func TestScenario(t *testing.T) {
 	// Add security.
 	sec := security.Security{
 		Admins: security.UserIDsRoles{
+			UserIDs: []string{"admin"},
+		},
+		Members: security.UserIDsRoles{
 			UserIDs: []string{"user"},
 		},
 	}
