@@ -23,8 +23,8 @@ import (
 
 // Session contains the information of a CouchDB session.
 type Session interface {
-	// UserID returns the user ID of this session.
-	UserID() string
+	// Name returns the users name of this session.
+	Name() string
 
 	// Cookie returns the session cookie as parameter
 	// to be used in the individual database requests.
@@ -37,14 +37,14 @@ type Session interface {
 // session implements the Session interface.
 type session struct {
 	cdb         couchdb.CouchDB
-	userID      string
+	name        string
 	authSession string
 }
 
 // NewSession starts a cookie based session for the given user.
-func NewSession(cdb couchdb.CouchDB, userID, password string) (Session, error) {
+func NewSession(cdb couchdb.CouchDB, name, password string) (Session, error) {
 	user := User{
-		UserID:   userID,
+		Name:     name,
 		Password: password,
 	}
 	rs := cdb.Post("_session", user)
@@ -66,15 +66,15 @@ func NewSession(cdb couchdb.CouchDB, userID, password string) (Session, error) {
 	}
 	s := &session{
 		cdb:         cdb,
-		userID:      roles.UserID,
+		name:        roles.Name,
 		authSession: authSession,
 	}
 	return s, nil
 }
 
-// UserID implements the Session interface.
-func (s *session) UserID() string {
-	return s.userID
+// Name implements the Session interface.
+func (s *session) Name() string {
+	return s.name
 }
 
 // Cookie implements the Session interface.

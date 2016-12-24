@@ -21,7 +21,7 @@ type User struct {
 	DocumentID       string `json:"_id,omitempty"`
 	DocumentRevision string `json:"_rev,omitempty"`
 
-	Name.    string   `json:"name"`
+	Name     string   `json:"name"`
 	Password string   `json:"password"`
 	Type     string   `json:"type,omitempty"`
 	Roles    []string `json:"roles,omitempty"`

@@ -106,7 +106,7 @@ func TestUser(t *testing.T) {
 
 	userA, err = security.ReadUser(cdb, "user1")
 	assert.Nil(err)
-	assert.Equal(userA.UserID, "user1")
+	assert.Equal(userA.Name, "user1")
 
 	err = security.DeleteUser(cdb, userA)
 	assert.Nil(err)
