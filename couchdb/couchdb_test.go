@@ -434,9 +434,9 @@ func prepareDatabase(database string, assert audit.Assertion) (couchdb.CouchDB, 
 	assert.Nil(err)
 	cdb, err := couchdb.Open(cfg)
 	assert.Nil(err)
-	resp := cdb.DeleteDatabase()
-	resp = cdb.CreateDatabase()
-	assert.True(resp.IsOK())
+	rs := cdb.DeleteDatabase()
+	rs = cdb.CreateDatabase()
+	assert.True(rs.IsOK())
 	return cdb, func() { cdb.DeleteDatabase() }
 }
 
@@ -448,9 +448,9 @@ func prepareFilledDatabase(database string, assert audit.Assertion) (couchdb.Cou
 	assert.Nil(err)
 	cdb, err := couchdb.Open(cfg)
 	assert.Nil(err)
-	resp := cdb.DeleteDatabase()
-	resp = cdb.CreateDatabase()
-	assert.True(resp.IsOK())
+	rs := cdb.DeleteDatabase()
+	rs = cdb.CreateDatabase()
+	assert.True(rs.IsOK())
 
 	gen := audit.NewGenerator(audit.FixedRand())
 	docs := []interface{}{}

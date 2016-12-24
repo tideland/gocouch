@@ -11,24 +11,45 @@ package security
 // IMPORTS
 //--------------------
 
-import ()
+//--------------------
+// EXTERNAL DOCUMENT TYPES
+//--------------------
+
+// User contains name and password
+// for user management and authentication.
+type User struct {
+	DocumentID       string `json:"_id,omitempty"`
+	DocumentRevision string `json:"_rev,omitempty"`
+
+	Name     string   `json:"name"`
+	Password string   `json:"password"`
+	Type     string   `json:"type,omitempty"`
+	Roles    []string `json:"roles,omitempty"`
+}
+
+// NamesRoles contains names and roles for
+// administrators and users.
+type NamesRoles struct {
+	Names []string `json:"names,omitempty"`
+	Roles []string `json:"roles,omitempty"`
+}
+
+// Security contains administrators and
+// members for one database.
+type Security struct {
+	Admins  NamesRoles `json:"admins,omitempty"`
+	Members NamesRoles `json:"members,omitempty"`
+}
 
 //--------------------
 // INTERNAL DOCUMENT TYPES
 //--------------------
 
-// couchdbAuthentication contains user ID and password
-// for authentication.
-type couchdbAuthentication struct {
-	UserID   string `json:"name"`
-	Password string `json:"password"`
-}
-
 // couchdRoles contains the roles of a user if the
 // authentication succeeded.
 type couchdbRoles struct {
 	OK       bool     `json:"ok"`
-	UserID   string   `json:"name"`
+	Name     string   `json:"name"`
 	Password string   `json:"password_sha,omitempty"`
 	Salt     string   `json:"salt,omitempty"`
 	Type     string   `json:"type"`

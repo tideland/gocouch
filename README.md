@@ -9,7 +9,7 @@ I hope you like it. ;)
 
 ## Version
 
-Version 1.0.0-alpha.2016-12-01
+Version 1.0.0-beta.2016-12-24
 
 ## Packages
 
@@ -18,6 +18,13 @@ Version 1.0.0-alpha.2016-12-01
 CouchDB client.
 
 [![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
+
+#### Security
+
+Management of CouchDB administrators and users for the security of databases. Users
+are authenticated by different request parameters.
+
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch/security?status.svg)](https://godoc.org/github.com/tideland/gocouch/security)
 
 #### Startup
 
