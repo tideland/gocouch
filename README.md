@@ -9,7 +9,7 @@ I hope you like it. ;)
 
 ## Version
 
-Version 1.0.0-alpha.2016-12-18
+Version 1.0.0-beta.2016-12-24
 
 ## Packages
 

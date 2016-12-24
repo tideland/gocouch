@@ -97,7 +97,7 @@ func TestUser(t *testing.T) {
 	assert.ErrorMatch(err, ".*status code 404.*")
 
 	userB := &security.User{
-		UserID:   "user1",
+		Name:     "user1",
 		Password: "user1",
 		Roles:    []string{"developer"},
 	}
@@ -119,8 +119,8 @@ func TestSecurity(t *testing.T) {
 
 	// Without database and authentication.
 	in := security.Security{
-		Admins: security.UserIDsRoles{
-			UserIDs: []string{"admin"},
+		Admins: security.NamesRoles{
+			Names: []string{"admin"},
 		},
 	}
 	err := security.WriteSecurity(cdb, in)
@@ -182,14 +182,14 @@ func TestScenario(t *testing.T) {
 
 	// Create users.
 	user := &security.User{
-		UserID:   "user",
+		Name:     "user",
 		Password: "user",
 		Roles:    []string{"developer"},
 	}
 	err = security.CreateUser(cdb, user, session.Cookie())
 	assert.Nil(err)
 	user = &security.User{
-		UserID:   "somebody",
+		Name:     "somebody",
 		Password: "somebody",
 		Roles:    []string{"visitors"},
 	}
@@ -216,11 +216,11 @@ func TestScenario(t *testing.T) {
 
 	// Add security.
 	sec := security.Security{
-		Admins: security.UserIDsRoles{
-			UserIDs: []string{"admin"},
+		Admins: security.NamesRoles{
+			Names: []string{"admin"},
 		},
-		Members: security.UserIDsRoles{
-			UserIDs: []string{"user"},
+		Members: security.NamesRoles{
+			Names: []string{"user"},
 		},
 	}
 	err = security.WriteSecurity(cdb, sec, session.Cookie())

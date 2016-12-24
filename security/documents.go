@@ -15,30 +15,30 @@ package security
 // EXTERNAL DOCUMENT TYPES
 //--------------------
 
-// User contains user ID and password
+// User contains name and password
 // for user management and authentication.
 type User struct {
 	DocumentID       string `json:"_id,omitempty"`
 	DocumentRevision string `json:"_rev,omitempty"`
 
-	UserID   string   `json:"name"`
+	Name.    string   `json:"name"`
 	Password string   `json:"password"`
 	Type     string   `json:"type,omitempty"`
 	Roles    []string `json:"roles,omitempty"`
 }
 
-// UserIDsRoles contains user IDs and roles for
+// NamesRoles contains names and roles for
 // administrators and users.
-type UserIDsRoles struct {
-	UserIDs []string `json:"names,omitempty"`
-	Roles   []string `json:"roles,omitempty"`
+type NamesRoles struct {
+	Names []string `json:"names,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 // Security contains administrators and
 // members for one database.
 type Security struct {
-	Admins  UserIDsRoles `json:"admins,omitempty"`
-	Members UserIDsRoles `json:"members,omitempty"`
+	Admins  NamesRoles `json:"admins,omitempty"`
+	Members NamesRoles `json:"members,omitempty"`
 }
 
 //--------------------
@@ -49,7 +49,7 @@ type Security struct {
 // authentication succeeded.
 type couchdbRoles struct {
 	OK       bool     `json:"ok"`
-	UserID   string   `json:"name"`
+	Name     string   `json:"name"`
 	Password string   `json:"password_sha,omitempty"`
 	Salt     string   `json:"salt,omitempty"`
 	Type     string   `json:"type"`

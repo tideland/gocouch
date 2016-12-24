@@ -20,8 +20,8 @@ import (
 //--------------------
 
 // HasAdministrator checks if a given administrator account exists.
-func HasAdministrator(cdb couchdb.CouchDB, userID string, params ...couchdb.Parameter) (bool, error) {
-	path := cdb.Path("_config", "admins", userID)
+func HasAdministrator(cdb couchdb.CouchDB, name string, params ...couchdb.Parameter) (bool, error) {
+	path := cdb.Path("_config", "admins", name)
 	rs := cdb.Get(path, nil, params...)
 	if !rs.IsOK() {
 		if rs.StatusCode() == couchdb.StatusNotFound {
@@ -33,8 +33,8 @@ func HasAdministrator(cdb couchdb.CouchDB, userID string, params ...couchdb.Para
 }
 
 // WriteAdministrator adds or updates an administrator to the given database.
-func WriteAdministrator(cdb couchdb.CouchDB, userID, password string, params ...couchdb.Parameter) error {
-	path := cdb.Path("_config", "admins", userID)
+func WriteAdministrator(cdb couchdb.CouchDB, name, password string, params ...couchdb.Parameter) error {
+	path := cdb.Path("_config", "admins", name)
 	rs := cdb.Put(path, password, params...)
 	if !rs.IsOK() {
 		return rs.Error()
@@ -43,8 +43,8 @@ func WriteAdministrator(cdb couchdb.CouchDB, userID, password string, params ...
 }
 
 // DeleteAdministrator deletes an administrator from the given database.
-func DeleteAdministrator(cdb couchdb.CouchDB, userID string, params ...couchdb.Parameter) error {
-	path := cdb.Path("_config", "admins", userID)
+func DeleteAdministrator(cdb couchdb.CouchDB, name string, params ...couchdb.Parameter) error {
+	path := cdb.Path("_config", "admins", name)
 	rs := cdb.Delete(path, nil, params...)
 	if !rs.IsOK() {
 		return rs.Error()
@@ -54,7 +54,7 @@ func DeleteAdministrator(cdb couchdb.CouchDB, userID string, params ...couchdb.P
 
 // CreateUser adds a new user to the system.
 func CreateUser(cdb couchdb.CouchDB, user *User, params ...couchdb.Parameter) error {
-	user.DocumentID = userDocumentID(user.UserID)
+	user.DocumentID = userDocumentID(user.Name)
 	user.Type = "user"
 	path := cdb.Path("_users", user.DocumentID)
 	rs := cdb.Put(path, user, params...)
@@ -62,8 +62,8 @@ func CreateUser(cdb couchdb.CouchDB, user *User, params ...couchdb.Parameter) er
 }
 
 // ReadUser reads an existing user from the system.
-func ReadUser(cdb couchdb.CouchDB, userID string, params ...couchdb.Parameter) (*User, error) {
-	path := cdb.Path("_users", userDocumentID(userID))
+func ReadUser(cdb couchdb.CouchDB, name string, params ...couchdb.Parameter) (*User, error) {
+	path := cdb.Path("_users", userDocumentID(name))
 	rs := cdb.Get(path, nil, params...)
 	if !rs.IsOK() {
 		return nil, rs.Error()
@@ -124,9 +124,9 @@ func WriteSecurity(cdb couchdb.CouchDB, security Security, params ...couchdb.Par
 }
 
 // userDocumentID builds the document ID based
-// on the user ID.
-func userDocumentID(userID string) string {
-	return "org.couchdb.user:" + userID
+// on the name.
+func userDocumentID(name string) string {
+	return "org.couchdb.user:" + name
 }
 
 // EOF

@@ -23,10 +23,10 @@ import (
 
 // BasicAuthentication is intended for basic authentication
 // against the database.
-func BasicAuthentication(userID, password string) couchdb.Parameter {
+func BasicAuthentication(name, password string) couchdb.Parameter {
 	return func(pa couchdb.Parameterizable) {
-		up := []byte(userID + ":" + password)
-		auth := "Basic " + base64.StdEncoding.EncodeToString(up)
+		np := []byte(name + ":" + password)
+		auth := "Basic " + base64.StdEncoding.EncodeToString(np)
 
 		pa.SetHeader("Authorization", auth)
 	}
