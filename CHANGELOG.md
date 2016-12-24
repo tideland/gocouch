@@ -1,5 +1,11 @@
 # Tideland Go CouchDB Client
 
+## 2016-12-24
+
+- Added *security* package for administrator and user management
+- User authentication via basic authentication or session cookies as parameters
+- Database security via `/{db}/_security` document
+
 ## 2016-12-01
 
 - Added parameters *skip* and *limit* for views
