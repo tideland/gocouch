@@ -13,9 +13,8 @@ package couchdb
 
 import (
 	"fmt"
-	"strings"
-
 	"reflect"
+	"strings"
 
 	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
