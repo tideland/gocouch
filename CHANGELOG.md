@@ -1,5 +1,9 @@
 # Tideland Go CouchDB Client
 
+## 2016-12-26
+
+- Optimized retrieval of *id* and *revision*
+
 ## 2016-12-24
 
 - Added *security* package for administrator and user management

@@ -15,7 +15,7 @@ Version 1.0.0-beta.2016-12-26
 
 #### CouchDB
 
-CouchDB client.
+Package providing the client for the CouchDB.
 
 [![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
 

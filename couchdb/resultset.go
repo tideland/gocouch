@@ -23,6 +23,7 @@ import (
 // STATUS CODES
 //--------------------
 
+// Status codes after database requests.
 const (
 	StatusOK       = http.StatusOK
 	StatusCreated  = http.StatusCreated

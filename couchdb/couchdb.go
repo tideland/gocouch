@@ -12,9 +12,10 @@ package couchdb
 //--------------------
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"reflect"
 
 	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
@@ -336,18 +337,33 @@ func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet
 // idAndRevision retrieves the ID and the revision of the
 // passed document.
 func (cdb *couchdb) idAndRevision(doc interface{}) (string, string, error) {
-	marshalled, err := json.Marshal(doc)
-	if err != nil {
-		return "", "", errors.Annotate(err, ErrMarshallingDoc, errorMessages)
+	v := reflect.Indirect(reflect.ValueOf(doc))
+	t := v.Type()
+	k := t.Kind()
+	if k != reflect.Struct {
+		return "", "", errors.New(ErrInvalidDocument, errorMessages)
 	}
-	metadata := &struct {
-		DocumentID       string `json:"_id,omitempt"`
-		DocumentRevision string `json:"_rev,omitempty"`
-	}{}
-	if err = json.Unmarshal(marshalled, metadata); err != nil {
-		return "", "", errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
+	var id string
+	var revision string
+	var found int
+	for i := 0; i < t.NumField(); i++ {
+		vf := v.Field(i)
+		tf := t.Field(i)
+		if json, ok := tf.Tag.Lookup("json"); ok {
+			switch json {
+			case "_id", "_id,omitempty":
+				id = vf.String()
+				found++
+			case "_rev", "_rev,omitempty":
+				revision = vf.String()
+				found++
+			}
+		}
 	}
-	return metadata.DocumentID, metadata.DocumentRevision, nil
+	if found != 2 {
+		return "", "", errors.New(ErrInvalidDocument, errorMessages)
+	}
+	return id, revision, nil
 }
 
 // EOF
