@@ -19,8 +19,10 @@ import (
 // CONSTANTS
 //--------------------
 
+// Error codes.
 const (
 	ErrNoConfiguration = iota + 1
+	ErrInvalidDocument
 	ErrNoIdentifier
 	ErrMarshallingDoc
 	ErrPreparingRequest
@@ -31,8 +33,10 @@ const (
 	ErrRemarshalling
 )
 
+// Error messages.
 var errorMessages = errors.Messages{
 	ErrNoConfiguration:     "cannot open database without configuration",
+	ErrInvalidDocument:     "document needs _id and _rev",
 	ErrNoIdentifier:        "document contains no identifier",
 	ErrMarshallingDoc:      "cannot marshal into database document",
 	ErrPreparingRequest:    "cannot prepare request",

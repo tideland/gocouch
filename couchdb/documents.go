@@ -8,12 +8,6 @@
 package couchdb
 
 //--------------------
-// IMPORTS
-//--------------------
-
-import ()
-
-//--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
 
@@ -26,7 +20,7 @@ type Status struct {
 	Reason   string `json:"reason"`
 }
 
-// Statuaess is the list of status information after a bulk writing.
+// Statuses is the list of status information after a bulk writing.
 type Statuses []Status
 
 //--------------------
