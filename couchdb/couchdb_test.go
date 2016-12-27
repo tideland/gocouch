@@ -27,12 +27,8 @@ import (
 //--------------------
 
 const (
-	LargerCfg      = "{etc {couchdb {hostname localhost}{port 5984}{database tgocouch-testing-temporary}}}"
-	EmptyCfg       = "{etc}"
-	LocalhostCfg   = "{etc {hostname localhost}{port 5984}}"
-	TestingDBCfg   = "{etc {hostname localhost}{port 5984}{database tgocouch-testing}}"
-	TemporaryDBCfg = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-temporary}}"
-	TemplateDBcfg  = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-<<DATABASE>>}}"
+	EmptyCfg      = "{etc}"
+	TemplateDBcfg = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-<<DATABASE>>}}"
 )
 
 //--------------------
@@ -52,7 +48,7 @@ func TestNoConfig(t *testing.T) {
 func TestAllDatabases(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
-	cfg, err := etc.ReadString(LargerCfg)
+	cfg, err := couchdb.Configure("localhost", 5984, "tgocouch-testing-temporary")
 	assert.Nil(err)
 
 	cdb, err := couchdb.OpenPath(cfg, "couchdb")
@@ -76,7 +72,7 @@ func TestAllDatabases(t *testing.T) {
 func TestCreateDeleteDatabase(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
-	cfg, err := etc.ReadString(TemporaryDBCfg)
+	cfg, err := couchdb.Configure("localhost", 5984, "tgocouch-testing-temporary")
 	assert.Nil(err)
 
 	// Open and check existance.

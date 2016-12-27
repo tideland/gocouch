@@ -365,4 +365,15 @@ func (cdb *couchdb) idAndRevision(doc interface{}) (string, string, error) {
 	return id, revision, nil
 }
 
+//--------------------
+// CONFIGURATION
+//--------------------
+
+// Configure creates a configuration out of
+// the passed arguments.
+func Configure(hostname string, port int, database string) (etc.Etc, error) {
+	source := fmt.Sprintf("{etc {hostname %s}{port %d}{database %s}}", hostname, port, database)
+	return etc.ReadString(source)
+}
+
 // EOF

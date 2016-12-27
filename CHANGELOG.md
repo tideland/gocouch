@@ -1,5 +1,9 @@
 # Tideland Go CouchDB Client
 
+## 2016-12-27
+
+- Added helper to create configurations
+
 ## 2016-12-26
 
 - Optimized retrieval of *id* and *revision*
