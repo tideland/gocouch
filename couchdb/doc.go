@@ -26,9 +26,14 @@
 //
 //    cdb, err := couchdb.OpenPath(cfg, "path/to/couchdb/config")
 //
-// The currently supported operations are the listing, creation, or deleting
-// of databases, the listing of all design document and document, and the
-// creation, reading, updating, and deleting of document.
+// In case of not using the etc configuration package there's the
+// little helper to create a configuration by calling
+//
+//    cfg := couchdb.Configure(hostname, port, database)
+//
+// The supported operations are the listing, creation, and deleting of
+// databases, the listing of all design documents and data documents, and
+// the creation, reading, updating, and deleting of documents.
 package couchdb
 
 // EOF
