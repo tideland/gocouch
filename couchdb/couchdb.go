@@ -1,6 +1,6 @@
 // Tideland Go CouchDB Client - CouchDB
 //
-// Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
+// Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
@@ -291,6 +291,13 @@ func (cdb *couchdb) UpdateDocument(doc interface{}, params ...Parameter) ResultS
 	if id == "" {
 		return newResultSet(nil, errors.New(ErrNoIdentifier, errorMessages))
 	}
+	hasDoc, err := cdb.HasDocument(id)
+	if err != nil {
+		return newResultSet(nil, err)
+	}
+	if !hasDoc {
+		return newResultSet(nil, errors.New(ErrNotFound, errorMessages, id))
+	}
 	return cdb.Put(cdb.DatabasePath(id), doc, params...)
 }
 
@@ -299,6 +306,13 @@ func (cdb *couchdb) DeleteDocument(doc interface{}, params ...Parameter) ResultS
 	id, rev, err := cdb.idAndRevision(doc)
 	if err != nil {
 		return newResultSet(nil, err)
+	}
+	hasDoc, err := cdb.HasDocument(id)
+	if err != nil {
+		return newResultSet(nil, err)
+	}
+	if !hasDoc {
+		return newResultSet(nil, errors.New(ErrNotFound, errorMessages, id))
 	}
 	params = append(params, Revision(rev))
 	return cdb.Delete(cdb.DatabasePath(id), nil, params...)

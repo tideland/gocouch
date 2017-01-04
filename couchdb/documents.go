@@ -1,6 +1,6 @@
 // Tideland Go CouchDB Client - CouchDB - Document Types
 //
-// Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
+// Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
@@ -55,11 +55,12 @@ type couchdbViewRow struct {
 
 type couchdbViewRows []couchdbViewRow
 
-// idAndRevision is used to simply retrieve ID and revision of
+// couchdbDocument is used to simply retrieve ID and revision of
 // a document.
-type idAndRevision struct {
+type couchdbDocument struct {
 	ID       string `json:"_id"`
 	Revision string `json:"_rev"`
+	Deleted  bool   `json:"_deleted"`
 }
 
 // EOF

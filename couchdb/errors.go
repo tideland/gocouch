@@ -1,6 +1,6 @@
 // Tideland Go CouchDB Client - CouchDB - Errors
 //
-// Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
+// Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
@@ -24,6 +24,7 @@ const (
 	ErrNoConfiguration = iota + 1
 	ErrInvalidDocument
 	ErrNoIdentifier
+	ErrNotFound
 	ErrMarshallingDoc
 	ErrPreparingRequest
 	ErrPerformingRequest
@@ -38,6 +39,7 @@ var errorMessages = errors.Messages{
 	ErrNoConfiguration:     "cannot open database without configuration",
 	ErrInvalidDocument:     "document needs _id and _rev",
 	ErrNoIdentifier:        "document contains no identifier",
+	ErrNotFound:            "document with identifier '%s' not found",
 	ErrMarshallingDoc:      "cannot marshal into database document",
 	ErrPreparingRequest:    "cannot prepare request",
 	ErrPerformingRequest:   "cannot perform request",

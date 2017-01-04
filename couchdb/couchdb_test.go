@@ -1,6 +1,6 @@
 // Tideland Go CouchDB Client - CouchDB - Unit Tests
 //
-// Copyright (C) 2016 Frank Mueller / Tideland / Oldenburg / Germany
+// Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/tideland/golib/audit"
+	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
 	"github.com/tideland/golib/identifier"
 
@@ -352,7 +353,7 @@ func TestUpdateDocument(t *testing.T) {
 	resp = cdb.UpdateDocument(docB)
 	assert.True(resp.IsOK())
 
-	// read the updated revision.
+	// Read the updated revision.
 	resp = cdb.ReadDocument(id)
 	assert.True(resp.IsOK())
 	docC := MyDocument{}
@@ -366,11 +367,18 @@ func TestUpdateDocument(t *testing.T) {
 	// Read the first revision.
 	resp = cdb.ReadDocument(id, couchdb.Revision(revision))
 	assert.True(resp.IsOK())
-	docD := MyDocument{}
-	err = resp.Document(&docD)
-	assert.Nil(err)
-	assert.Equal(docD.DocumentRevision, revision)
-	assert.Equal(docD.Age, docA.Age)
+	assert.Equal(resp.Revision(), revision)
+
+	// Try to update a non-existent document.
+	docD := MyDocument{
+		DocumentID: "i-do-not-exist",
+		Name:       "none",
+		Age:        999,
+	}
+	resp = cdb.UpdateDocument(docD)
+	assert.False(resp.IsOK())
+	assert.Equal(resp.StatusCode(), couchdb.StatusNotFound)
+	assert.True(errors.IsError(resp.Error(), couchdb.ErrNotFound))
 }
 
 // TestDeleteDocument tests deleting a document.
@@ -404,7 +412,13 @@ func TestDeleteDocument(t *testing.T) {
 	// Try to read deleted document.
 	resp = cdb.ReadDocument(id)
 	assert.False(resp.IsOK())
-	assert.ErrorMatch(resp.Error(), ".* 404,.*")
+	assert.Equal(resp.StatusCode(), couchdb.StatusNotFound)
+
+	// Try to delete it a second time.
+	resp = cdb.DeleteDocument(docB)
+	assert.False(resp.IsOK())
+	assert.Equal(resp.StatusCode(), couchdb.StatusNotFound)
+	assert.True(errors.IsError(resp.Error(), couchdb.ErrNotFound))
 }
 
 //--------------------
