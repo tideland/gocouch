@@ -421,6 +421,40 @@ func TestDeleteDocument(t *testing.T) {
 	assert.True(errors.IsError(resp.Error(), couchdb.ErrNotFound))
 }
 
+// TestDeleteDocumentByID tests deleting a document by identifier.
+func TestDeleteDocumentByID(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb, cleanup := prepareDatabase("delete-document-by-id", assert)
+	defer cleanup()
+
+	// Create test document.
+	docA := MyDocument{
+		DocumentID: "foo-12345",
+		Name:       "foo",
+		Age:        33,
+	}
+	resp := cdb.CreateDocument(docA)
+	assert.True(resp.IsOK())
+	id := resp.ID()
+	revision := resp.Revision()
+	assert.Equal(id, "foo-12345")
+
+	// Delete the test document by ID.
+	resp = cdb.DeleteDocumentByID(id, revision)
+	assert.True(resp.IsOK())
+
+	// Try to read deleted document.
+	resp = cdb.ReadDocument(id)
+	assert.False(resp.IsOK())
+	assert.Equal(resp.StatusCode(), couchdb.StatusNotFound)
+
+	// Try to delete it a second time.
+	resp = cdb.DeleteDocumentByID(id, revision)
+	assert.False(resp.IsOK())
+	assert.Equal(resp.StatusCode(), couchdb.StatusNotFound)
+	assert.True(errors.IsError(resp.Error(), couchdb.ErrNotFound))
+}
+
 //--------------------
 // HELPERS
 //--------------------

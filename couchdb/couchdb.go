@@ -88,6 +88,10 @@ type CouchDB interface {
 	// DeleteDocument deletes an existing document.
 	DeleteDocument(doc interface{}, params ...Parameter) ResultSet
 
+	// DeleteDocumentByID deletes an existing document simply by
+	// its identifier and revision.
+	DeleteDocumentByID(id, revision string, params ...Parameter) ResultSet
+
 	// BulkWriteDocuments allows to create or update many
 	// documents en bloc.
 	BulkWriteDocuments(docs []interface{}, params ...Parameter) (Statuses, error)
@@ -303,7 +307,7 @@ func (cdb *couchdb) UpdateDocument(doc interface{}, params ...Parameter) ResultS
 
 // DeleteDocument implements the CouchDB interface.
 func (cdb *couchdb) DeleteDocument(doc interface{}, params ...Parameter) ResultSet {
-	id, rev, err := cdb.idAndRevision(doc)
+	id, revision, err := cdb.idAndRevision(doc)
 	if err != nil {
 		return newResultSet(nil, err)
 	}
@@ -314,7 +318,20 @@ func (cdb *couchdb) DeleteDocument(doc interface{}, params ...Parameter) ResultS
 	if !hasDoc {
 		return newResultSet(nil, errors.New(ErrNotFound, errorMessages, id))
 	}
-	params = append(params, Revision(rev))
+	params = append(params, Revision(revision))
+	return cdb.Delete(cdb.DatabasePath(id), nil, params...)
+}
+
+// DeleteDocumentByID implements the CouchDB interface.
+func (cdb *couchdb) DeleteDocumentByID(id, revision string, params ...Parameter) ResultSet {
+	hasDoc, err := cdb.HasDocument(id)
+	if err != nil {
+		return newResultSet(nil, err)
+	}
+	if !hasDoc {
+		return newResultSet(nil, errors.New(ErrNotFound, errorMessages, id))
+	}
+	params = append(params, Revision(revision))
 	return cdb.Delete(cdb.DatabasePath(id), nil, params...)
 }
 
