@@ -7,6 +7,10 @@
 
 package couchdb
 
+import (
+	"encoding/json"
+)
+
 //--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
@@ -47,10 +51,10 @@ type couchdbViewResult struct {
 
 // couchdbViewRow contains one row of a view result.
 type couchdbViewRow struct {
-	ID       string      `json:"id"`
-	Key      interface{} `json:"key"`
-	Value    interface{} `json:"value"`
-	Document interface{} `json:"doc"`
+	ID       string          `json:"id"`
+	Key      json.RawMessage `json:"key"`
+	Value    json.RawMessage `json:"value"`
+	Document json.RawMessage `json:"doc"`
 }
 
 type couchdbViewRows []couchdbViewRow

@@ -21,16 +21,12 @@ import (
 // UNMARSHABLE
 //--------------------
 
-// Unmarshable describes an empty interface that can be
-// unmarshalled into a given variable. It is used to
+// Unmarshable describes a not yet unmarshalled value that
+// can be unmarshalled into a given variable. It is used to
 // access key, value, or document of view result rows.
 type Unmarshable interface {
-	// Raw returns the original empty interface.
-	Raw() interface{}
-
-	// JSON returns the JSON encoded value as it has
-	// been part of a row.
-	JSON() ([]byte, error)
+	// Raw returns the original as string.
+	Raw() string
 
 	// Unmarshal unmarshals the interface into the
 	// passed variable.
@@ -39,32 +35,19 @@ type Unmarshable interface {
 
 // unmarshable implements the Unmarshable interface.
 type unmarshable struct {
-	value interface{}
+	value json.RawMessage
 }
 
 // Raw implements the Unmarshable interface.
-func (u unmarshable) Raw() interface{} {
-	return u.value
-}
-
-// JSON implements the Unmarshable interface.
-func (u unmarshable) JSON() ([]byte, error) {
-	jb, err := json.Marshal(u.value)
-	if err != nil {
-		return nil, errors.Annotate(err, ErrRemarshalling, errorMessages)
-	}
-	return jb, nil
+func (u unmarshable) Raw() string {
+	return string(u.value)
 }
 
 // Unmarshal implements the Unmarshable interface.
 func (u unmarshable) Unmarshal(doc interface{}) error {
-	jb, err := u.JSON()
+	err := json.Unmarshal(u.value, doc)
 	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(jb, doc)
-	if err != nil {
-		return errors.Annotate(err, ErrRemarshalling, errorMessages)
+		return errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
 	}
 	return nil
 }

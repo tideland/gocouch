@@ -30,8 +30,8 @@ const (
 	ErrPerformingRequest
 	ErrClientRequest
 	ErrUnmarshallingDoc
+	ErrUnmarshallingField
 	ErrReadingResponseBody
-	ErrRemarshalling
 )
 
 // Error messages.
@@ -45,8 +45,8 @@ var errorMessages = errors.Messages{
 	ErrPerformingRequest:   "cannot perform request",
 	ErrClientRequest:       "client request failed: status code %d, error '%s', reason '%s'",
 	ErrUnmarshallingDoc:    "cannot unmarshal database document",
+	ErrUnmarshallingField:  "cannot unmarshal the document field",
 	ErrReadingResponseBody: "cannot read response body",
-	ErrRemarshalling:       "cannot re-marshal the result",
 }
 
 // EOF
