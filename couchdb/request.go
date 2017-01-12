@@ -19,6 +19,7 @@ import (
 	"net/url"
 
 	"github.com/tideland/golib/errors"
+	"github.com/tideland/golib/logger"
 )
 
 //--------------------
@@ -150,6 +151,10 @@ func (req *request) do(method string) *resultSet {
 	}
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
+	// Log if wanted.
+	if req.cdb.debugLog {
+		logger.Debugf("couchdb request '%s %s'", method, u)
+	}
 	// Perform HTTP request.
 	httpResp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {

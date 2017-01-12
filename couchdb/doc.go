@@ -19,6 +19,7 @@
 //        {hostname <hostname||localhost>}
 //        {port <port||5984>}
 //        {database <database||default>}
+//        {debug-logging <true/false||false>}
 //    }
 //
 // If any of the values isn't defined the default values above are taken.

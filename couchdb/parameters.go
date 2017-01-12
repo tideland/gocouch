@@ -12,6 +12,7 @@ package couchdb
 //--------------------
 
 import (
+	"encoding/json"
 	"strconv"
 )
 
@@ -72,25 +73,38 @@ func Revision(revision string) Parameter {
 	}
 }
 
-// Keys sets a number of keys wanted from a view request.
+// Keys sets a number of keys wanted for a view request.
 func Keys(keys ...interface{}) Parameter {
 	return func(pa Parameterizable) {
 		pa.AddKeys(keys...)
 	}
 }
 
-// StartEndKey sets the startkey and endkey for view requests.
-func StartEndKey(start, end string) Parameter {
+// StringKeys sets a number of keys of type string wanted for a view request.
+func StringKeys(keys ...string) Parameter {
+	var ikeys []interface{}
+	for _, key := range keys {
+		ikeys = append(ikeys, key)
+	}
+	return Keys(ikeys...)
+}
+
+// StartEndKey sets the startkey and endkey for a view request.
+func StartEndKey(start, end interface{}) Parameter {
+	jstart, _ := json.Marshal(start)
+	jend, _ := json.Marshal(end)
 	return func(pa Parameterizable) {
-		pa.SetQuery("startkey", "\""+start+"\"")
-		pa.SetQuery("endkey", "\""+end+"\"")
+		pa.SetQuery("startkey", string(jstart))
+		pa.SetQuery("endkey", string(jend))
 	}
 }
 
-// OneKey sets the startkey and endkey for view requests for
-// only one key
-func OneKey(key string) Parameter {
-	return StartEndKey(key, key)
+// OneKey reduces a view result to only one emitted key.
+func OneKey(key interface{}) Parameter {
+	jkey, _ := json.Marshal(key)
+	return func(pa Parameterizable) {
+		pa.SetQuery("key", string(jkey))
+	}
 }
 
 // SkipLimit sets the number to skip and the limit for

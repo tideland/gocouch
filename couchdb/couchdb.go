@@ -104,6 +104,7 @@ type CouchDB interface {
 type couchdb struct {
 	host       string
 	database   string
+	debugLog   bool
 	parameters []Parameter
 }
 
@@ -135,6 +136,7 @@ func OpenPath(cfg etc.Etc, path string, params ...Parameter) (CouchDB, error) {
 	cdb := &couchdb{
 		host:       host,
 		database:   cfg.ValueAsString("database", "default"),
+		debugLog:   cfg.ValueAsBool("debug-logging", false),
 		parameters: params,
 	}
 	return cdb, nil
