@@ -1,5 +1,11 @@
 # Tideland Go CouchDB Client
 
+## 2017-01-12
+
+- Made view key parameters typing more flexible 
+- View result set now also returns number of returned rows
+- Added configuration option for debug logging of requests
+
 ## 2016-12-27
 
 - Added helper to create configurations

@@ -21,6 +21,7 @@ import (
 	"github.com/tideland/golib/identifier"
 
 	"github.com/tideland/gocouch/couchdb"
+	"github.com/tideland/golib/logger"
 )
 
 //--------------------
@@ -29,7 +30,7 @@ import (
 
 const (
 	EmptyCfg      = "{etc}"
-	TemplateDBcfg = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-<<DATABASE>>}}"
+	TemplateDBcfg = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-<<DATABASE>>}{debug-logging true}}"
 )
 
 //--------------------
@@ -219,6 +220,7 @@ func TestCallingView(t *testing.T) {
 	design, err := cdb.Design("testing")
 	assert.Nil(err)
 	design.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc);  } }", "")
+	design.SetView("age", "function(doc){ emit(doc.age, doc.name); }", "")
 	resp := design.Write()
 	assert.True(resp.IsOK())
 
@@ -259,6 +261,22 @@ func TestCallingView(t *testing.T) {
 	assert.True(vrs.IsOK())
 	trFinal := vrs.TotalRows()
 	assert.Equal(trFinal, trNew)
+
+	// Call age view with a key.
+	vrs = cdb.View("testing", "age", couchdb.OneKey(51))
+	assert.True(vrs.IsOK())
+	assert.True(vrs.TotalRows() > vrs.ReturnedRows())
+	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
+		var age int
+		var name string
+		err := key.Unmarshal(&age)
+		assert.Nil(err)
+		assert.Equal(age, 51)
+		err = value.Unmarshal(&name)
+		assert.Nil(err)
+		return err
+	})
+	assert.Nil(err)
 }
 
 // TestCreateDocument tests creating new documents.
@@ -473,6 +491,7 @@ type MyDocument struct {
 // prepareDatabase opens the database, deletes a possible test
 // database, and creates it newly.
 func prepareDatabase(database string, assert audit.Assertion) (couchdb.CouchDB, func()) {
+	logger.SetLevel(logger.LevelDebug)
 	cfgstr := strings.Replace(TemplateDBcfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
 	assert.Nil(err)
@@ -487,6 +506,7 @@ func prepareDatabase(database string, assert audit.Assertion) (couchdb.CouchDB, 
 // prepareFilledDatabase opens the database, deletes a possible test
 // database, creates it newly and adds some data.
 func prepareFilledDatabase(database string, assert audit.Assertion) (couchdb.CouchDB, func()) {
+	logger.SetLevel(logger.LevelDebug)
 	cfgstr := strings.Replace(TemplateDBcfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
 	assert.Nil(err)
