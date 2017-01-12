@@ -71,13 +71,16 @@ type ViewResultSet interface {
 	// Error returns a possible error of a request.
 	Error() error
 
-	// TotalRows returns the number of viewResultSet rows.
+	// TotalRows returns the number of ViewResultSet rows.
 	TotalRows() int
 
-	// Offset returns the starting offset of the viewResultSet rows.
+	// ReturnedRows returns the nnumber of returned ViewResultSet rows.
+	ReturnedRows() int
+
+	// Offset returns the starting offset of the ViewResultSet rows.
 	Offset() int
 
-	// RowsDo iterates over the rows of a viewResultSet and
+	// RowsDo iterates over the rows of a ViewResultSet and
 	// processes the content.
 	RowsDo(rpf RowProcessingFunc) error
 }
@@ -117,6 +120,14 @@ func (vrs *viewResultSet) TotalRows() int {
 		return -1
 	}
 	return vrs.vr.TotalRows
+}
+
+// ReturnedRows implements the ViewResultSet interface.
+func (vrs *viewResultSet) ReturnedRows() int {
+	if err := vrs.readViewResult(); err != nil {
+		return -1
+	}
+	return len(vrs.vr.Rows)
 }
 
 // Offset implements the ViewResultSet interface.
