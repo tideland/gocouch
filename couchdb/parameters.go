@@ -89,6 +89,22 @@ func StringKeys(keys ...string) Parameter {
 	return Keys(ikeys...)
 }
 
+// StartKey sets the startkey for a view request.
+func StartKey(start interface{}) Parameter {
+	jstart, _ := json.Marshal(start)
+	return func(pa Parameterizable) {
+		pa.SetQuery("startkey", string(jstart))
+	}
+}
+
+// EndKey sets the endkey for a view request.
+func EndKey(end interface{}) Parameter {
+	jend, _ := json.Marshal(end)
+	return func(pa Parameterizable) {
+		pa.SetQuery("endkey", string(jend))
+	}
+}
+
 // StartEndKey sets the startkey and endkey for a view request.
 func StartEndKey(start, end interface{}) Parameter {
 	jstart, _ := json.Marshal(start)
@@ -107,6 +123,24 @@ func OneKey(key interface{}) Parameter {
 	}
 }
 
+// Skip sets the number to skip for view requests.
+func Skip(skip int) Parameter {
+	return func(pa Parameterizable) {
+		if skip > 0 {
+			pa.SetQuery("skip", strconv.Itoa(skip))
+		}
+	}
+}
+
+// lIMIT sets the limit for view requests.
+func Limit(limit int) Parameter {
+	return func(pa Parameterizable) {
+		if limit > 0 {
+			pa.SetQuery("limit", strconv.Itoa(limit))
+		}
+	}
+}
+
 // SkipLimit sets the number to skip and the limit for
 // view requests.
 func SkipLimit(skip, limit int) Parameter {
@@ -116,6 +150,31 @@ func SkipLimit(skip, limit int) Parameter {
 		}
 		if limit > 0 {
 			pa.SetQuery("limit", strconv.Itoa(limit))
+		}
+	}
+}
+
+// Descending sets the flag for a descending order of found view documents.
+func Descending() Parameter {
+	return func(pa Parameterizable) {
+		pa.SetQuery("descending", "true")
+	}
+}
+
+// NoReduce sets the flag for usage of a reduce function to false.
+func NoReduce() Parameter {
+	return func(pa Parameterizable) {
+		pa.SetQuery("reduce", "false")
+	}
+}
+
+// Group sets the flag for grouping including the level for the
+// reduce function.
+func Group(level int) Parameter {
+	return func(pa Parameterizable) {
+		pa.SetQuery("group", "true")
+		if level > 0 {
+			pa.SetQuery("group_level", strconv.Itoa(level))
 		}
 	}
 }

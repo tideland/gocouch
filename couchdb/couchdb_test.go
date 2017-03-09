@@ -277,6 +277,23 @@ func TestCallingView(t *testing.T) {
 		return err
 	})
 	assert.Nil(err)
+
+	// Call age view with the oldest 5 peaple below 50.
+	vrs = cdb.View("testing", "age", couchdb.StartKey(50), couchdb.Descending(), couchdb.Limit(5))
+	assert.True(vrs.IsOK())
+	assert.True(vrs.ReturnedRows() <= 5)
+	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
+		var age int
+		var name string
+		err := key.Unmarshal(&age)
+		assert.Nil(err)
+		assert.True(age <= 50)
+		err = value.Unmarshal(&name)
+		assert.Nil(err)
+		assert.Logf("Tester %s has age %d", name, age)
+		return err
+	})
+	assert.Nil(err)
 }
 
 // TestCreateDocument tests creating new documents.
