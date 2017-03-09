@@ -81,7 +81,9 @@ type ResultSet interface {
 
 // resultSet implements the ResultSet interface.
 type resultSet struct {
-	resp        *http.Response
+	statusCode  int
+	body        []byte
+	headers     map[string]string
 	document    map[string]interface{}
 	id          string
 	revision    string
@@ -95,26 +97,41 @@ type resultSet struct {
 // client ResultSet type out of it.
 func newResultSet(resp *http.Response, err error) *resultSet {
 	rs := &resultSet{
-		resp: resp,
-		err:  err,
+		statusCode: 200,
+		err:        err,
+	}
+	if err != nil && errors.IsError(err, ErrNotFound) {
+		rs.statusCode = StatusNotFound
+	}
+	if resp != nil {
+		// Get status code.
+		rs.statusCode = resp.StatusCode
+		// Read body.
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			rs.err = errors.Annotate(err, ErrReadingResponseBody, errorMessages)
+		}
+		rs.body = body
+		// Read headers.
+		rs.headers = make(map[string]string)
+		for key, values := range resp.Header {
+			if len(values) > 0 {
+				rs.headers[key] = values[0]
+			}
+		}
 	}
 	return rs
 }
 
 // IsOK implements the ResultSet interface.
 func (rs *resultSet) IsOK() bool {
-	return rs.err == nil && (rs.resp.StatusCode >= 200 && rs.resp.StatusCode <= 299)
+	return rs.err == nil && (rs.statusCode >= 200 && rs.statusCode <= 299)
 }
 
 // StatusCode implements the ResultSet interface.
 func (rs *resultSet) StatusCode() int {
-	if rs.resp == nil {
-		if rs.err != nil && errors.IsError(rs.err, ErrNotFound) {
-			return StatusNotFound
-		}
-		return -1
-	}
-	return rs.resp.StatusCode
+	return rs.statusCode
 }
 
 // Error implements the ResultSet interface.
@@ -128,7 +145,7 @@ func (rs *resultSet) Error() error {
 	if err := rs.readDocument(); err != nil {
 		return err
 	}
-	return errors.New(ErrClientRequest, errorMessages, rs.resp.StatusCode, rs.errorText, rs.errorReason)
+	return errors.New(ErrClientRequest, errorMessages, rs.statusCode, rs.errorText, rs.errorReason)
 }
 
 // ID implements the ResultSet interface.
@@ -166,11 +183,10 @@ func (rs *resultSet) IsDeleted() bool {
 
 // Document implements the ResultSet interface.
 func (rs *resultSet) Document(value interface{}) error {
-	data, err := rs.Raw()
-	if err != nil {
-		return err
+	if rs.err != nil {
+		return rs.err
 	}
-	err = json.Unmarshal(data, value)
+	err := json.Unmarshal(rs.body, value)
 	if err != nil {
 		return errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
 	}
@@ -179,20 +195,16 @@ func (rs *resultSet) Document(value interface{}) error {
 
 // Raw implements the ResultSet interface.
 func (rs *resultSet) Raw() ([]byte, error) {
-	if rs.err != nil {
-		return nil, rs.err
-	}
-	defer rs.resp.Body.Close()
-	body, err := ioutil.ReadAll(rs.resp.Body)
-	if err != nil {
-		return nil, errors.Annotate(err, ErrReadingResponseBody, errorMessages)
-	}
-	return body, nil
+	return rs.body, rs.err
 }
 
 // Header implements the ResultSet interface.
 func (rs *resultSet) Header(key string) string {
-	return rs.resp.Header.Get(key)
+	value, ok := rs.headers[key]
+	if !ok {
+		return ""
+	}
+	return value
 }
 
 // readDocument lazily loads and analyzis a generic document.
