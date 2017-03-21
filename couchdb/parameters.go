@@ -186,4 +186,15 @@ func IncludeDocuments() Parameter {
 	}
 }
 
+//--------------------
+// HELPER FUNCTIONS
+//--------------------
+
+// ComplexKey simply combines individual values to a combined
+// key as slice of those values. It's only for making the code
+// more readable.
+func ComplexKey(values ...interface{}) interface{} {
+	return values
+}
+
 // EOF
