@@ -60,7 +60,7 @@ func (u unmarshable) Unmarshal(doc interface{}) error {
 // of a viewResultSet row.
 type RowProcessingFunc func(id string, key, value, document Unmarshable) error
 
-// ViewResultSet contains the viewResultSet result set.
+// ViewResultSet contains the result set of a view.
 type ViewResultSet interface {
 	// IsOK checks the status code if the result is okay.
 	IsOK() bool
