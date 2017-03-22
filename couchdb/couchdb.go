@@ -98,6 +98,9 @@ type CouchDB interface {
 
 	// View performs a view request.
 	View(design, view string, params ...Parameter) ViewResultSet
+
+	// Changes returns access to the changes of the database.
+	Changes(params ...Parameter) ChangesResultSet
 }
 
 // couchdb implements CouchDB.
@@ -364,6 +367,11 @@ func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet
 		rs = req.get()
 	}
 	return newView(rs)
+}
+
+// Changes implements the CouchDB interface.
+func (cdb *couchdb) Changes(params ...Parameter) ChangesResultSet {
+	return nil
 }
 
 // idAndRevision retrieves the ID and the revision of the
