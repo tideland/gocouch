@@ -366,12 +366,19 @@ func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet
 	} else {
 		rs = req.get()
 	}
-	return newView(rs)
+	return newViewResultSet(rs)
 }
 
 // Changes implements the CouchDB interface.
 func (cdb *couchdb) Changes(params ...Parameter) ChangesResultSet {
-	return nil
+	var rs ResultSet
+	req := newRequest(cdb, cdb.DatabasePath("_changes"), nil).apply(params...)
+	if len(req.keys) > 0 {
+		rs = req.post()
+	} else {
+		rs = req.get()
+	}
+	return newChangesResultSet(rs)
 }
 
 // idAndRevision retrieves the ID and the revision of the
