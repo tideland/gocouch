@@ -47,6 +47,7 @@ type request struct {
 	query     url.Values
 	header    http.Header
 	keys      []interface{}
+	docIDs    []string
 }
 
 // newRequest creates a new request for the given location, method, and path. If needed
@@ -59,29 +60,35 @@ func newRequest(cdb *couchdb, path string, doc interface{}) *request {
 		query:  url.Values{},
 		header: http.Header{},
 		keys:   []interface{}{},
+		docIDs: []string{},
 	}
 	req.apply(cdb.parameters...)
 	return req
 }
 
-// SetQuery implements the Parametrizable interface.
+// SetQuery implements the Parameterizable interface.
 func (req *request) SetQuery(key, value string) {
 	req.query.Set(key, value)
 }
 
-// AddQuery implements the Parametrizable interface.
+// AddQuery implements the Parameterizable interface.
 func (req *request) AddQuery(key, value string) {
 	req.query.Add(key, value)
 }
 
-// SetHeader implements the Parametrizable interface.
+// SetHeader implements the Parameterizable interface.
 func (req *request) SetHeader(key, value string) {
 	req.header.Set(key, value)
 }
 
-// AddKeys implements the Parametrizable interface.
+// AddKeys implements the Parameterizable interface.
 func (req *request) AddKeys(keys ...interface{}) {
 	req.keys = append(req.keys, keys...)
+}
+
+// AddDocumentIDs implements the ParParameterizableametrizable interface.
+func (req *request) AddDocumentIDs(docIDs ...string) {
+	req.docIDs = append(req.docIDs, docIDs...)
 }
 
 // apply applies a list of parameters to the request.

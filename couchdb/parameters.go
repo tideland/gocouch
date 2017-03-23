@@ -39,6 +39,9 @@ type Parameterizable interface {
 
 	// AddKeys adds view key parameters.
 	AddKeys(keys ...interface{})
+
+	// AddDocumentIDs adds changes document ID parameters.
+	AddDocumentIDs(docIDs ...string)
 }
 
 //--------------------

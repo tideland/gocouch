@@ -91,8 +91,8 @@ type viewResultSet struct {
 	vr *couchdbViewResult
 }
 
-// newView provides access to the viewResultSet data.
-func newView(rs ResultSet) *viewResultSet {
+// newViewResultSet returns a ChangesResultSet.
+func newViewResultSet(rs ResultSet) ViewResultSet {
 	vrs := &viewResultSet{
 		rs: rs,
 	}
