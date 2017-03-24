@@ -59,6 +59,10 @@ type couchdbViewRow struct {
 
 type couchdbViewRows []couchdbViewRow
 
+// couchdbChangesResult is a generic result of a CouchDB changes feed.
+type couchdbChangesResult struct {
+}
+
 // couchdbDocument is used to simply retrieve ID and revision of
 // a document.
 type couchdbDocument struct {

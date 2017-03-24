@@ -30,6 +30,7 @@ type ChangesResultSet interface {
 // changesResultSet implements the ChangesResultSet interface.
 type changesResultSet struct {
 	rs ResultSet
+	cr *couchdbChangesResult
 }
 
 // newChangesResultSet returns a ChangesResultSet.
@@ -53,6 +54,22 @@ func (crs *changesResultSet) StatusCode() int {
 // Error implements the ChangesResultSet interface.
 func (crs *changesResultSet) Error() error {
 	return crs.rs.Error()
+}
+
+// readChangesResult lazily reads the viewResultSet result.
+func (crs *changesResultSet) readChangesResult() error {
+	if !crs.IsOK() {
+		return crs.Error()
+	}
+	if crs.cr == nil {
+		cr := couchdbChangesResult{}
+		err := crs.rs.Document(&cr)
+		if err != nil {
+			return err
+		}
+		crs.cr = &cr
+	}
+	return nil
 }
 
 // EOF
