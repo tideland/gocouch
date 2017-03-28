@@ -57,7 +57,7 @@ func (u unmarshable) Unmarshal(doc interface{}) error {
 //--------------------
 
 // RowProcessingFunc is a function processing the content
-// of a viewResultSet row.
+// of a view row.
 type RowProcessingFunc func(id string, key, value, document Unmarshable) error
 
 // ViewResultSet contains the result set of a view.
