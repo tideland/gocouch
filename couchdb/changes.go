@@ -11,6 +11,10 @@ package couchdb
 // IMPORTS
 //--------------------
 
+import (
+	"fmt"
+)
+
 //--------------------
 // CHANGES RESULT SET
 //--------------------
@@ -36,6 +40,9 @@ type ChangesResultSet interface {
 	// Pending returns the number of pending changes if the
 	// query has been limited.
 	Pending() int
+
+	// ResultsLen returns the number of changes.
+	ResultsLen() int
 
 	// ResultsDo iterates over the results of a ChangesResultSet and
 	// processes the content.
@@ -76,7 +83,7 @@ func (crs *changesResultSet) LastSequence() string {
 	if err := crs.readChangesResult(); err != nil {
 		return ""
 	}
-	return crs.changes.LastSequence
+	return fmt.Sprintf("%v", crs.changes.LastSequence)
 }
 
 // Pending implements the ChangesResultSet interface.
@@ -85,6 +92,14 @@ func (crs *changesResultSet) Pending() int {
 		return -1
 	}
 	return crs.changes.Pending
+}
+
+// ResultsLen implements the ChangesResultSet interface.
+func (crs *changesResultSet) ResultsLen() int {
+	if err := crs.readChangesResult(); err != nil {
+		return -1
+	}
+	return len(crs.changes.Results)
 }
 
 // ResultsDo implements the ChangesResultSet interface.
@@ -97,7 +112,8 @@ func (crs *changesResultSet) ResultsDo(cpf ChangesProcessingFunc) error {
 		for _, change := range result.Changes {
 			revisions = append(revisions, change.Revision)
 		}
-		if err := cpf(result.ID, result.Sequence, result.Deleted, revisions...); err != nil {
+		seq := fmt.Sprintf("%v", result.Sequence)
+		if err := cpf(result.ID, seq, result.Deleted, revisions...); err != nil {
 			return err
 		}
 	}
