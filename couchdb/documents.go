@@ -61,7 +61,7 @@ type couchdbViewRows []couchdbViewRow
 
 // couchdbChanges is a generic result of a CouchDB changes feed.
 type couchdbChanges struct {
-	LastSequence string                `json:"last_seq"`
+	LastSequence interface{}                `json:"last_seq"`
 	Pending      int                   `json:"pending"`
 	Results      couchdbChangesResults `json:"results"`
 }
@@ -69,7 +69,7 @@ type couchdbChanges struct {
 // couchdbChangesResult contains one result of a changes feed.
 type couchdbChangesResult struct {
 	ID       string                      `json:"id"`
-	Sequence string                      `json:"seq"`
+	Sequence interface{}                      `json:"seq"`
 	Changes  couchdbChangesResultChanges `json:"changes"`
 	Deleted  bool                        `json:"deleted,omitempty"`
 }
