@@ -26,14 +26,6 @@ import (
 // CONSTANTS
 //--------------------
 
-const (
-	methHead   = "HEAD"
-	methGet    = "GET"
-	methPut    = "PUT"
-	methPost   = "POST"
-	methDelete = "DELETE"
-)
-
 //--------------------
 // REQUEST
 //--------------------
@@ -46,8 +38,6 @@ type request struct {
 	docReader io.Reader
 	query     url.Values
 	header    http.Header
-	keys      []interface{}
-	docIDs    []string
 }
 
 // newRequest creates a new request for the given location, method, and path. If needed
@@ -59,8 +49,6 @@ func newRequest(cdb *couchdb, path string, doc interface{}) *request {
 		doc:    doc,
 		query:  url.Values{},
 		header: http.Header{},
-		keys:   []interface{}{},
-		docIDs: []string{},
 	}
 	req.apply(cdb.parameters...)
 	return req
@@ -81,14 +69,9 @@ func (req *request) SetHeader(key, value string) {
 	req.header.Set(key, value)
 }
 
-// AddKeys implements the Parameterizable interface.
-func (req *request) AddKeys(keys ...interface{}) {
-	req.keys = append(req.keys, keys...)
-}
-
-// AddDocumentIDs implements the ParParameterizableametrizable interface.
-func (req *request) AddDocumentIDs(docIDs ...string) {
-	req.docIDs = append(req.docIDs, docIDs...)
+// UpdateDocument implements the Parameterizable interface.
+func (req *request) UpdateDocument(update func(interface{}) interface{}) {
+	req.doc = update(req.doc)
 }
 
 // apply applies a list of parameters to the request.
@@ -101,27 +84,27 @@ func (req *request) apply(params ...Parameter) *request {
 
 // head performs a HEAD request.
 func (req *request) head() *resultSet {
-	return req.do(methHead)
+	return req.do(http.MethodHead)
 }
 
 // get performs a GET request.
 func (req *request) get() *resultSet {
-	return req.do(methGet)
+	return req.do(http.MethodGet)
 }
 
 // put performs a PUT request.
 func (req *request) put() *resultSet {
-	return req.do(methPut)
+	return req.do(http.MethodPut)
 }
 
 // post performs a POST request.
 func (req *request) post() *resultSet {
-	return req.do(methPost)
+	return req.do(http.MethodPost)
 }
 
 // delete performs a DELETE request.
 func (req *request) delete() *resultSet {
-	return req.do(methDelete)
+	return req.do(http.MethodDelete)
 }
 
 // do performs a request.
@@ -134,10 +117,6 @@ func (req *request) do(method string) *resultSet {
 	}
 	if len(req.query) > 0 {
 		u.RawQuery = req.query.Encode()
-	}
-	// Check if keys shall be used for the body.
-	if len(req.keys) > 0 {
-		req.doc = &couchdbViewKeys{Keys: req.keys}
 	}
 	// Marshal a potential document.
 	if req.doc != nil {

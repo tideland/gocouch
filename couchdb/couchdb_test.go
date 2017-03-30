@@ -294,23 +294,23 @@ func TestCallingView(t *testing.T) {
 		return err
 	})
 	assert.Nil(err)
-}
 
-// TestChanges tests retrieving changes.
-func TestChanges(t *testing.T) {
-	assert := audit.NewTestingAssertion(t, true)
-	cdb, cleanup := prepareFilledDatabase("changes", assert)
-	defer cleanup()
-
-	// Simple changes access.
-	crs := cdb.Changes()
-	assert.True(crs.IsOK())
-	assert.True(crs.ResultsLen() > 0)
-
-	crs.ResultsDo(func(id, sequence string, deleted bool, revisions ...string) error {
-		assert.Logf("%v: %v / %v / %v", id, sequence, deleted, revisions)
-		return nil
+	// Call age view with multiple keys (even multiple times).
+	vrs = cdb.View("testing", "age", couchdb.Keys(50, 51, 52), couchdb.Keys(53, 54))
+	assert.True(vrs.IsOK())
+	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
+		var age int
+		var name string
+		err := key.Unmarshal(&age)
+		assert.Nil(err)
+		assert.True(age >= 50)
+		assert.True(age <= 54)
+		err = value.Unmarshal(&name)
+		assert.Nil(err)
+		assert.Logf("Tester %s has age %d", name, age)
+		return err
 	})
+	assert.Nil(err)
 }
 
 // TestCreateDocument tests creating new documents.

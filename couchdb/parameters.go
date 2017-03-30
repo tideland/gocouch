@@ -37,11 +37,8 @@ type Parameterizable interface {
 	// SetHeader sets a header parameter.
 	SetHeader(key, value string)
 
-	// AddKeys adds view key parameters.
-	AddKeys(keys ...interface{})
-
-	// AddDocumentIDs adds changes document ID parameters.
-	AddDocumentIDs(docIDs ...string)
+	// UpdateDocument allows to modify or exchange the document.
+	UpdateDocument(update func(interface{}) interface{})
 }
 
 //--------------------
@@ -78,8 +75,19 @@ func Revision(revision string) Parameter {
 
 // Keys sets a number of keys wanted for a view request.
 func Keys(keys ...interface{}) Parameter {
+	update := func(doc interface{}) interface{} {
+		if doc == nil {
+			doc = &couchdbKeys{}
+		}
+		kdoc, ok := doc.(*couchdbKeys)
+		if ok {
+			kdoc.Keys = append(kdoc.Keys, keys...)
+			return kdoc
+		}
+		return doc
+	}
 	return func(pa Parameterizable) {
-		pa.AddKeys(keys...)
+		pa.UpdateDocument(update)
 	}
 }
 
@@ -135,7 +143,7 @@ func Skip(skip int) Parameter {
 	}
 }
 
-// lIMIT sets the limit for view requests.
+// Limit sets the limit for view requests.
 func Limit(limit int) Parameter {
 	return func(pa Parameterizable) {
 		if limit > 0 {
