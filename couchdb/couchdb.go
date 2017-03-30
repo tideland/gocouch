@@ -98,9 +98,6 @@ type CouchDB interface {
 
 	// View performs a view request.
 	View(design, view string, params ...Parameter) ViewResultSet
-
-	// Changes returns access to the changes of the database.
-	Changes(params ...Parameter) ChangesResultSet
 }
 
 // couchdb implements CouchDB.
@@ -361,24 +358,12 @@ func (cdb *couchdb) BulkWriteDocuments(docs []interface{}, params ...Parameter) 
 func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet {
 	var rs ResultSet
 	req := newRequest(cdb, cdb.DatabasePath("_design", design, "_view", view), nil).apply(params...)
-	if len(req.keys) > 0 {
+	if req.doc != nil {
 		rs = req.post()
 	} else {
 		rs = req.get()
 	}
 	return newViewResultSet(rs)
-}
-
-// Changes implements the CouchDB interface.
-func (cdb *couchdb) Changes(params ...Parameter) ChangesResultSet {
-	var rs ResultSet
-	req := newRequest(cdb, cdb.DatabasePath("_changes"), nil).apply(params...)
-	if len(req.keys) > 0 {
-		rs = req.post()
-	} else {
-		rs = req.get()
-	}
-	return newChangesResultSet(rs)
 }
 
 // idAndRevision retrieves the ID and the revision of the

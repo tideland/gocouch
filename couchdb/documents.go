@@ -37,8 +37,8 @@ type couchdbBulkDocuments struct {
 	NewEdits bool          `json:"new_edits,omitempty"`
 }
 
-// couchdbViewKeys sets key constraints for view requests.
-type couchdbViewKeys struct {
+// couchdbKeys sets key constraints for view requests.
+type couchdbKeys struct {
 	Keys []interface{} `json:"keys"`
 }
 
@@ -58,31 +58,6 @@ type couchdbViewRow struct {
 }
 
 type couchdbViewRows []couchdbViewRow
-
-// couchdbChanges is a generic result of a CouchDB changes feed.
-type couchdbChanges struct {
-	LastSequence interface{}                `json:"last_seq"`
-	Pending      int                   `json:"pending"`
-	Results      couchdbChangesResults `json:"results"`
-}
-
-// couchdbChangesResult contains one result of a changes feed.
-type couchdbChangesResult struct {
-	ID       string                      `json:"id"`
-	Sequence interface{}                      `json:"seq"`
-	Changes  couchdbChangesResultChanges `json:"changes"`
-	Deleted  bool                        `json:"deleted,omitempty"`
-}
-
-type couchdbChangesResults []couchdbChangesResult
-
-// couchdbChangesResultChange contains the revision number of one
-// change of one document.
-type couchdbChangesResultChange struct {
-	Revision string `json:"rev"`
-}
-
-type couchdbChangesResultChanges []couchdbChangesResultChange
 
 // couchdbDocument is used to simply retrieve ID and revision of
 // a document.

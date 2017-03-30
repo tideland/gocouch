@@ -1,11 +1,11 @@
-// Tideland Go CouchDB Client - CouchDB - Changes
+// Tideland Go CouchDB Client - Changes
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-package couchdb
+package changes
 
 //--------------------
 // IMPORTS
@@ -13,7 +13,19 @@ package couchdb
 
 import (
 	"fmt"
+
+	"github.com/tideland/gocouch/couchdb"
 )
+
+//--------------------
+// API
+//--------------------
+
+// Changes returns access to the changes of the database.
+func Changes(cdb couchdb.CouchDB, params ...couchdb.Parameter) ChangesResultSet {
+	rs := cdb.Get(cdb.DatabasePath("_changes"), nil, params...)
+	return newChangesResultSet(rs)
+}
 
 //--------------------
 // CHANGES RESULT SET
@@ -51,12 +63,12 @@ type ChangesResultSet interface {
 
 // changesResultSet implements the ChangesResultSet interface.
 type changesResultSet struct {
-	rs      ResultSet
+	rs      couchdb.ResultSet
 	changes *couchdbChanges
 }
 
 // newChangesResultSet returns a ChangesResultSet.
-func newChangesResultSet(rs ResultSet) ChangesResultSet {
+func newChangesResultSet(rs couchdb.ResultSet) ChangesResultSet {
 	crs := &changesResultSet{
 		rs: rs,
 	}
@@ -135,5 +147,9 @@ func (crs *changesResultSet) readChangesResult() error {
 	}
 	return nil
 }
+
+//--------------------
+// HELPERS
+//--------------------
 
 // EOF
