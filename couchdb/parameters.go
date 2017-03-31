@@ -42,7 +42,7 @@ type Parameterizable interface {
 }
 
 //--------------------
-// PARAMETER
+// PARAMETERS
 //--------------------
 
 // Parameter is a function changing one (or if needed multile) parameter.
