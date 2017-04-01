@@ -15,6 +15,12 @@ package changes
 // INTERNAL DOCUMENT TYPES
 //--------------------
 
+// couchdbDocumentIDs contains document identifiers as body
+// for the according changes filter.
+tpye couchdbDocumentIDs struct {
+	DocumentIDs []string `json:"doc_ids"`
+}
+
 // couchdbChanges is a generic result of a CouchDB changes feed.
 type couchdbChanges struct {
 	LastSequence interface{}           `json:"last_seq"`
