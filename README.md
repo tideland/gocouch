@@ -9,7 +9,7 @@ I hope you like it. ;)
 
 ## Version
 
-Version 1.0.0-beta.2017-03-21
+Version 1.0.0-beta.2017-04-01
 
 ## Packages
 
@@ -18,6 +18,13 @@ Version 1.0.0-beta.2017-03-21
 Package providing the client for the CouchDB.
 
 [![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
+
+#### Changes
+
+Changes provides access to changes made documents in a database in time order
+of application.
+
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch/changes?status.svg)](https://godoc.org/github.com/tideland/gocouch/changes)
 
 #### Security
 
