@@ -21,7 +21,7 @@ import (
 
 // DecomentIDs sets a filtering of the changes to the
 // given document identifiers.
-func DocumentIDs(documentIDs ...string) Parameter {
+func DocumentIDs(documentIDs ...string) couchdb.Parameter {
 	update := func(doc interface{}) interface{} {
 		if doc == nil {
 			doc = &couchdbDocumentIDs{}
@@ -33,7 +33,7 @@ func DocumentIDs(documentIDs ...string) Parameter {
 		}
 		return doc
 	}
-	return func(pa Parameterizable) {
+	return func(pa couchdb.Parameterizable) {
 		pa.SetQuery("filter", "_doc_ids")
 		pa.UpdateDocument(update)
 	}

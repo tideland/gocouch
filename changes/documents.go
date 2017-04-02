@@ -17,7 +17,7 @@ package changes
 
 // couchdbDocumentIDs contains document identifiers as body
 // for the according changes filter.
-tpye couchdbDocumentIDs struct {
+type couchdbDocumentIDs struct {
 	DocumentIDs []string `json:"doc_ids"`
 }
 
