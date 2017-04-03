@@ -16,6 +16,14 @@ import (
 )
 
 //--------------------
+// CONSTANTS
+//--------------------
+
+const (
+	SinceNow = "now"
+)
+
+//--------------------
 // PARAMETERS
 //--------------------
 
@@ -36,6 +44,13 @@ func DocumentIDs(documentIDs ...string) couchdb.Parameter {
 	return func(pa couchdb.Parameterizable) {
 		pa.SetQuery("filter", "_doc_ids")
 		pa.UpdateDocument(update)
+	}
+}
+
+// Since sets the start of the changes gathering, can also be "now".
+func Since(sequence string) couchdb.Parameter {
+	return func(pa couchdb.Parameterizable) {
+		pa.SetQuery("since", sequence)
 	}
 }
 

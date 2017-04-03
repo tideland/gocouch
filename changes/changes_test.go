@@ -49,10 +49,13 @@ func TestChanges(t *testing.T) {
 	assert.Equal(crs.ResultsLen(), count)
 
 	crs.ResultsDo(func(id, sequence string, deleted bool, revisions ...string) error {
-		assert.Logf("%v: %v / %v / %v", id, sequence, deleted, revisions)
 		assert.Length(revisions, 1)
 		return nil
 	})
+
+	crs = changes.Changes(cdb, changes.Since(crs.LastSequence()))
+	assert.True(crs.IsOK())
+	assert.Equal(crs.ResultsLen(), 0)
 }
 
 //--------------------
