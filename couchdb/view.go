@@ -11,47 +11,6 @@ package couchdb
 // IMPORTS
 //--------------------
 
-import (
-	"encoding/json"
-
-	"github.com/tideland/golib/errors"
-)
-
-//--------------------
-// UNMARSHABLE
-//--------------------
-
-// Unmarshable describes a not yet unmarshalled value that
-// can be unmarshalled into a given variable. It is used to
-// access key, value, or document of view result rows.
-type Unmarshable interface {
-	// Raw returns the original as string.
-	Raw() string
-
-	// Unmarshal unmarshals the interface into the
-	// passed variable.
-	Unmarshal(doc interface{}) error
-}
-
-// unmarshable implements the Unmarshable interface.
-type unmarshable struct {
-	value json.RawMessage
-}
-
-// Raw implements the Unmarshable interface.
-func (u unmarshable) Raw() string {
-	return string(u.value)
-}
-
-// Unmarshal implements the Unmarshable interface.
-func (u unmarshable) Unmarshal(doc interface{}) error {
-	err := json.Unmarshal(u.value, doc)
-	if err != nil {
-		return errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
-	}
-	return nil
-}
-
 //--------------------
 // VIEW RESULT SET
 //--------------------
@@ -144,9 +103,9 @@ func (vrs *viewResultSet) RowsDo(rpf RowProcessingFunc) error {
 		return err
 	}
 	for _, row := range vrs.vr.Rows {
-		key := unmarshable{row.Key}
-		value := unmarshable{row.Value}
-		doc := unmarshable{row.Document}
+		key := NewUnmarshableJSON(row.Key)
+		value := NewUnmarshableJSON(row.Value)
+		doc := NewUnmarshableJSON(row.Document)
 		if err := rpf(row.ID, key, value, doc); err != nil {
 			return err
 		}

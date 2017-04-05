@@ -8,6 +8,14 @@
 package changes
 
 //--------------------
+// IMPORTS
+//--------------------
+
+import (
+	"encoding/json"
+)
+
+//--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
 
@@ -33,6 +41,7 @@ type couchdbChangesResult struct {
 	ID       string                      `json:"id"`
 	Sequence interface{}                 `json:"seq"`
 	Changes  couchdbChangesResultChanges `json:"changes"`
+	Document json.RawMessage             `json:"doc,omitempty"`
 	Deleted  bool                        `json:"deleted,omitempty"`
 }
 

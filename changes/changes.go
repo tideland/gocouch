@@ -33,7 +33,7 @@ func Changes(cdb couchdb.CouchDB, params ...couchdb.Parameter) ChangesResultSet 
 
 // ChangesProcessingFunc is a function processing the content
 // of a changes row.
-type ChangesProcessingFunc func(id, sequence string, deleted bool, revisions ...string) error
+type ChangesProcessingFunc func(id, sequence string, deleted bool, revisions []string, document couchdb.Unmarshable) error
 
 // ChangesResultSet contains the result set of a change.
 type ChangesResultSet interface {
@@ -125,7 +125,8 @@ func (crs *changesResultSet) ResultsDo(cpf ChangesProcessingFunc) error {
 			revisions = append(revisions, change.Revision)
 		}
 		seq := fmt.Sprintf("%v", result.Sequence)
-		if err := cpf(result.ID, seq, result.Deleted, revisions...); err != nil {
+		doc := couchdb.NewUnmarshableJSON(result.Document)
+		if err := cpf(result.ID, seq, result.Deleted, revisions, doc); err != nil {
 			return err
 		}
 	}
