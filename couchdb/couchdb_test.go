@@ -53,20 +53,19 @@ func TestAllDatabases(t *testing.T) {
 	cfg, err := couchdb.Configure("localhost", 5984, "tgocouch-testing-temporary")
 	assert.Nil(err)
 
+	// This time also use OpenPath() to check its behavior.
 	cdb, err := couchdb.OpenPath(cfg, "couchdb")
 	assert.Nil(err)
-	ids, err := cdb.AllDatabases()
+	_, err = cdb.AllDatabases()
 	assert.Nil(err)
-	assert.True(len(ids) != 0)
 
 	cfg, err = etc.ReadString(EmptyCfg)
 	assert.Nil(err)
 
 	cdb, err = couchdb.OpenPath(cfg, "")
 	assert.Nil(err)
-	ids, err = cdb.AllDatabases()
+	_, err = cdb.AllDatabases()
 	assert.Nil(err)
-	assert.True(len(ids) != 0)
 }
 
 // TestCreateDeleteDatabase tests the creation and deletion

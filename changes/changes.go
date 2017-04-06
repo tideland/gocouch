@@ -23,7 +23,7 @@ import (
 
 // Changes returns access to the changes of the database.
 func Changes(cdb couchdb.CouchDB, params ...couchdb.Parameter) ChangesResultSet {
-	rs := cdb.Get(cdb.DatabasePath("_changes"), nil, params...)
+	rs := cdb.GetOrPost(cdb.DatabasePath("_changes"), nil, params...)
 	return newChangesResultSet(rs)
 }
 

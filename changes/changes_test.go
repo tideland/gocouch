@@ -40,7 +40,7 @@ const (
 func TestChanges(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	count := 1000
-	cdb, cleanup := prepareFilledDatabase(assert, "changes", count)
+	cdb, gen, cleanup := prepareFilledDatabase(assert, "changes", count)
 	defer cleanup()
 
 	// Simple changes access.
@@ -53,13 +53,30 @@ func TestChanges(t *testing.T) {
 		return nil
 	})
 
-	crs = changes.Changes(cdb, changes.Since(crs.LastSequence()))
+	lseq := crs.LastSequence()
+	crs = changes.Changes(cdb, changes.Since(lseq))
 	assert.True(crs.IsOK())
 	assert.Equal(crs.ResultsLen(), 0)
 
 	crs = changes.Changes(cdb, changes.Since(changes.SinceNow))
 	assert.True(crs.IsOK())
 	assert.Equal(crs.ResultsLen(), 0)
+
+	// Add some more documents and check changes.
+	docs := generateDocuments(gen, count)
+	results, err := cdb.BulkWriteDocuments(docs)
+	assert.Nil(err)
+	for _, result := range results {
+		assert.True(result.OK)
+	}
+
+	crs = changes.Changes(cdb)
+	assert.True(crs.IsOK())
+	assert.Equal(crs.ResultsLen(), 2*count)
+
+	crs = changes.Changes(cdb, changes.Since(lseq))
+	assert.True(crs.IsOK())
+	assert.Equal(crs.ResultsLen(), count)
 }
 
 //--------------------
@@ -79,7 +96,7 @@ type MyDocument struct {
 
 // prepareFilledDatabase opens the database, deletes a possible test
 // database, creates it newly and adds some data.
-func prepareFilledDatabase(assert audit.Assertion, database string, count int) (couchdb.CouchDB, func()) {
+func prepareFilledDatabase(assert audit.Assertion, database string, count int) (couchdb.CouchDB, *audit.Generator, func()) {
 	logger.SetLevel(logger.LevelDebug)
 	cfgstr := strings.Replace(TemplateDBcfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
@@ -89,8 +106,18 @@ func prepareFilledDatabase(assert audit.Assertion, database string, count int) (
 	rs := cdb.DeleteDatabase()
 	rs = cdb.CreateDatabase()
 	assert.True(rs.IsOK())
-
 	gen := audit.NewGenerator(audit.FixedRand())
+	docs := generateDocuments(gen, count)
+	results, err := cdb.BulkWriteDocuments(docs)
+	assert.Nil(err)
+	for _, result := range results {
+		assert.True(result.OK)
+	}
+	return cdb, gen, func() { cdb.DeleteDatabase() }
+}
+
+// generateDocuments creates a number of documents.
+func generateDocuments(gen *audit.Generator, count int) []interface{} {
 	docs := []interface{}{}
 	for i := 0; i < count; i++ {
 		first, middle, last := gen.Name()
@@ -103,13 +130,7 @@ func prepareFilledDatabase(assert audit.Assertion, database string, count int) (
 		}
 		docs = append(docs, doc)
 	}
-	results, err := cdb.BulkWriteDocuments(docs)
-	assert.Nil(err)
-	for _, result := range results {
-		assert.True(result.OK)
-	}
-
-	return cdb, func() { cdb.DeleteDatabase() }
+	return docs
 }
 
 // EOF
