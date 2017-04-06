@@ -48,6 +48,12 @@ type CouchDB interface {
 	// Delete performs a GET request against the configured database.
 	Delete(path string, doc interface{}, params ...Parameter) ResultSet
 
+	// GetOrPost decides based on the document if it will perform
+	// a GET request or a POST request. The document can be set directly
+	// or by one of the parameters. Several of the CouchDB commands
+	// work this way.
+	GetOrPost(path string, doc interface{}, params ...Parameter) ResultSet
+
 	// AllDatabases returns a list of all database IDs
 	// of the connected server.
 	AllDatabases() ([]string, error)
@@ -180,6 +186,18 @@ func (cdb *couchdb) Post(path string, doc interface{}, params ...Parameter) Resu
 func (cdb *couchdb) Delete(path string, doc interface{}, params ...Parameter) ResultSet {
 	req := newRequest(cdb, path, doc)
 	return req.apply(params...).delete()
+}
+
+// GetOrPost implements the CouchDB interface.
+func (cdb *couchdb) GetOrPost(path string, doc interface{}, params ...Parameter) ResultSet {
+	var rs ResultSet
+	req := newRequest(cdb, path, doc).apply(params...)
+	if req.doc != nil {
+		rs = req.post()
+	} else {
+		rs = req.get()
+	}
+	return rs
 }
 
 // AllDatabases implements the CouchDB interface.
@@ -356,13 +374,7 @@ func (cdb *couchdb) BulkWriteDocuments(docs []interface{}, params ...Parameter) 
 
 // View implements the CouchDB interface.
 func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet {
-	var rs ResultSet
-	req := newRequest(cdb, cdb.DatabasePath("_design", design, "_view", view), nil).apply(params...)
-	if req.doc != nil {
-		rs = req.post()
-	} else {
-		rs = req.get()
-	}
+	rs := cdb.GetOrPost(cdb.DatabasePath("_design", design, "_view", view), nil, params...)
 	return newViewResultSet(rs)
 }
 
