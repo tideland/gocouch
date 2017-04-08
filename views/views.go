@@ -1,15 +1,29 @@
-// Tideland Go CouchDB Client - CouchDB - View
+// Tideland Go CouchDB Client - Views
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-package couchdb
+package views
 
 //--------------------
 // IMPORTS
 //--------------------
+
+import (
+	"github.com/tideland/gocouch/couchdb"
+)
+
+//--------------------
+// API
+//--------------------
+
+// View performs a view request.
+func View(cdb couchdb.CouchDB, design, view string, params ...couchdb.Parameter) ViewResultSet {
+	rs := cdb.GetOrPost(cdb.DatabasePath("_design", design, "_view", view), nil, params...)
+	return newViewResultSet(rs)
+}
 
 //--------------------
 // VIEW RESULT SET
@@ -17,7 +31,7 @@ package couchdb
 
 // RowProcessingFunc is a function processing the content
 // of a view row.
-type RowProcessingFunc func(id string, key, value, document Unmarshable) error
+type RowProcessingFunc func(id string, key, value, document couchdb.Unmarshable) error
 
 // ViewResultSet contains the result set of a view.
 type ViewResultSet interface {
@@ -46,12 +60,12 @@ type ViewResultSet interface {
 
 // viewResultSet implements the ViewResultSet interface.
 type viewResultSet struct {
-	rs ResultSet
+	rs couchdb.ResultSet
 	vr *couchdbViewResult
 }
 
 // newViewResultSet returns a ChangesResultSet.
-func newViewResultSet(rs ResultSet) ViewResultSet {
+func newViewResultSet(rs couchdb.ResultSet) ViewResultSet {
 	vrs := &viewResultSet{
 		rs: rs,
 	}
@@ -103,9 +117,9 @@ func (vrs *viewResultSet) RowsDo(rpf RowProcessingFunc) error {
 		return err
 	}
 	for _, row := range vrs.vr.Rows {
-		key := NewUnmarshableJSON(row.Key)
-		value := NewUnmarshableJSON(row.Value)
-		doc := NewUnmarshableJSON(row.Document)
+		key := couchdb.NewUnmarshableJSON(row.Key)
+		value := couchdb.NewUnmarshableJSON(row.Value)
+		doc := couchdb.NewUnmarshableJSON(row.Document)
 		if err := rpf(row.ID, key, value, doc); err != nil {
 			return err
 		}
