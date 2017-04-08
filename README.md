@@ -9,7 +9,7 @@ I hope you like it. ;)
 
 ## Version
 
-Version 1.0.0-beta.2017-04-01
+Version 1.0.0-beta.2017-04-08
 
 ## Packages
 
@@ -18,6 +18,12 @@ Version 1.0.0-beta.2017-04-01
 Package providing the client for the CouchDB.
 
 [![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
+
+#### Views
+
+Views allows to call CouchDB views and retrieve their results.
+
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch/views?status.svg)](https://godoc.org/github.com/tideland/gocouch/views)
 
 #### Changes
 
