@@ -7,9 +7,12 @@ databases.
 
 I hope you like it. ;)
 
+[![Sourcegraph](https://sourcegraph.com/github.com/tideland/gocouch/-/badge.svg)](https://sourcegraph.com/github.com/tideland/gocouch?badge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tideland/gocouch)](https://goreportcard.com/report/github.com/tideland/gocouch)
+
 ## Version
 
-Version 1.0.0-beta.2017-04-08
+Version 1.0.0-beta.2017-04-09
 
 ## Packages
 
