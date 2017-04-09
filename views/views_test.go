@@ -16,7 +16,6 @@ import (
 	"testing"
 
 	"github.com/tideland/golib/audit"
-	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
 	"github.com/tideland/golib/identifier"
 	"github.com/tideland/golib/logger"
@@ -90,7 +89,7 @@ func TestCallingView(t *testing.T) {
 	assert.Equal(trFinal, trNew)
 
 	// Call age view with a key.
-	vrs = views.View(cdb, "testing", "age", couchdb.OneKey(51))
+	vrs = views.View(cdb, "testing", "age", views.OneKey(51))
 	assert.True(vrs.IsOK())
 	assert.True(vrs.TotalRows() > vrs.ReturnedRows())
 	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
@@ -106,7 +105,7 @@ func TestCallingView(t *testing.T) {
 	assert.Nil(err)
 
 	// Call age view with the oldest 5 peaple below 50.
-	vrs = views.View(cdb, "testing", "age", couchdb.StartKey(50), couchdb.Descending(), couchdb.Limit(5))
+	vrs = views.View(cdb, "testing", "age", views.StartKey(50), views.Descending(), views.Limit(5))
 	assert.True(vrs.IsOK())
 	assert.True(vrs.ReturnedRows() <= 5)
 	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
@@ -123,7 +122,7 @@ func TestCallingView(t *testing.T) {
 	assert.Nil(err)
 
 	// Call age view with multiple keys (even multiple times).
-	vrs = views.View(cdb, "testing", "age", couchdb.Keys(50, 51, 52), couchdb.Keys(53, 54))
+	vrs = views.View(cdb, "testing", "age", views.Keys(50, 51, 52), views.Keys(53, 54))
 	assert.True(vrs.IsOK())
 	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
 		var age int
