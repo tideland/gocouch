@@ -12,6 +12,7 @@ package couchdb
 //--------------------
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -47,6 +48,12 @@ type CouchDB interface {
 
 	// Delete performs a GET request against the configured database.
 	Delete(path string, doc interface{}, params ...Parameter) ResultSet
+
+	// GetOrPost decides based on the document if it will perform
+	// a GET request or a POST request. The document can be set directly
+	// or by one of the parameters. Several of the CouchDB commands
+	// work this way.
+	GetOrPost(path string, doc interface{}, params ...Parameter) ResultSet
 
 	// AllDatabases returns a list of all database IDs
 	// of the connected server.
@@ -95,9 +102,6 @@ type CouchDB interface {
 	// BulkWriteDocuments allows to create or update many
 	// documents en bloc.
 	BulkWriteDocuments(docs []interface{}, params ...Parameter) (Statuses, error)
-
-	// View performs a view request.
-	View(design, view string, params ...Parameter) ViewResultSet
 }
 
 // couchdb implements CouchDB.
@@ -182,6 +186,18 @@ func (cdb *couchdb) Delete(path string, doc interface{}, params ...Parameter) Re
 	return req.apply(params...).delete()
 }
 
+// GetOrPost implements the CouchDB interface.
+func (cdb *couchdb) GetOrPost(path string, doc interface{}, params ...Parameter) ResultSet {
+	var rs ResultSet
+	req := newRequest(cdb, path, doc).apply(params...)
+	if req.doc != nil {
+		rs = req.post()
+	} else {
+		rs = req.get()
+	}
+	return rs
+}
+
 // AllDatabases implements the CouchDB interface.
 func (cdb *couchdb) AllDatabases() ([]string, error) {
 	rs := cdb.Get("/_all_dbs", nil)
@@ -220,17 +236,20 @@ func (cdb *couchdb) DeleteDatabase(params ...Parameter) ResultSet {
 
 // AllDesigns implements the CouchDB interface.
 func (cdb *couchdb) AllDesigns() ([]string, error) {
-	rs := cdb.Get(cdb.DatabasePath("_all_docs"), nil, StartEndKey("_design/", "_design0/"))
+	jstart, _ := json.Marshal("_design/")
+	jend, _ := json.Marshal("_design0/")
+	startEndKey := Query(KeyValue{"startkey", string(jstart)}, KeyValue{"endkey", string(jend)})
+	rs := cdb.Get(cdb.DatabasePath("_all_docs"), nil, startEndKey)
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
-	vr := couchdbViewResult{}
-	err := rs.Document(&vr)
+	designRows := couchdbRows{}
+	err := rs.Document(&designRows)
 	if err != nil {
 		return nil, err
 	}
 	ids := []string{}
-	for _, row := range vr.Rows {
+	for _, row := range designRows.Rows {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil
@@ -247,13 +266,13 @@ func (cdb *couchdb) AllDocuments() ([]string, error) {
 	if !rs.IsOK() {
 		return nil, rs.Error()
 	}
-	vr := couchdbViewResult{}
-	err := rs.Document(&vr)
+	designRows := couchdbRows{}
+	err := rs.Document(&designRows)
 	if err != nil {
 		return nil, err
 	}
 	ids := []string{}
-	for _, row := range vr.Rows {
+	for _, row := range designRows.Rows {
 		ids = append(ids, row.ID)
 	}
 	return ids, nil
@@ -352,18 +371,6 @@ func (cdb *couchdb) BulkWriteDocuments(docs []interface{}, params ...Parameter) 
 		return nil, err
 	}
 	return statuses, nil
-}
-
-// View implements the CouchDB interface.
-func (cdb *couchdb) View(design, view string, params ...Parameter) ViewResultSet {
-	var rs ResultSet
-	req := newRequest(cdb, cdb.DatabasePath("_design", design, "_view", view), nil).apply(params...)
-	if len(req.keys) > 0 {
-		rs = req.post()
-	} else {
-		rs = req.get()
-	}
-	return newView(rs)
 }
 
 // idAndRevision retrieves the ID and the revision of the

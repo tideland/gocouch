@@ -1,55 +1,28 @@
-// Tideland Go CouchDB Client - CouchDB - View
+// Tideland Go CouchDB Client - Views
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-package couchdb
+package views
 
 //--------------------
 // IMPORTS
 //--------------------
 
 import (
-	"encoding/json"
-
-	"github.com/tideland/golib/errors"
+	"github.com/tideland/gocouch/couchdb"
 )
 
 //--------------------
-// UNMARSHABLE
+// API
 //--------------------
 
-// Unmarshable describes a not yet unmarshalled value that
-// can be unmarshalled into a given variable. It is used to
-// access key, value, or document of view result rows.
-type Unmarshable interface {
-	// Raw returns the original as string.
-	Raw() string
-
-	// Unmarshal unmarshals the interface into the
-	// passed variable.
-	Unmarshal(doc interface{}) error
-}
-
-// unmarshable implements the Unmarshable interface.
-type unmarshable struct {
-	value json.RawMessage
-}
-
-// Raw implements the Unmarshable interface.
-func (u unmarshable) Raw() string {
-	return string(u.value)
-}
-
-// Unmarshal implements the Unmarshable interface.
-func (u unmarshable) Unmarshal(doc interface{}) error {
-	err := json.Unmarshal(u.value, doc)
-	if err != nil {
-		return errors.Annotate(err, ErrUnmarshallingDoc, errorMessages)
-	}
-	return nil
+// View performs a view request.
+func View(cdb couchdb.CouchDB, design, view string, params ...couchdb.Parameter) ViewResultSet {
+	rs := cdb.GetOrPost(cdb.DatabasePath("_design", design, "_view", view), nil, params...)
+	return newViewResultSet(rs)
 }
 
 //--------------------
@@ -57,10 +30,10 @@ func (u unmarshable) Unmarshal(doc interface{}) error {
 //--------------------
 
 // RowProcessingFunc is a function processing the content
-// of a viewResultSet row.
-type RowProcessingFunc func(id string, key, value, document Unmarshable) error
+// of a view row.
+type RowProcessingFunc func(id string, key, value, document couchdb.Unmarshable) error
 
-// ViewResultSet contains the viewResultSet result set.
+// ViewResultSet contains the result set of a view.
 type ViewResultSet interface {
 	// IsOK checks the status code if the result is okay.
 	IsOK() bool
@@ -87,12 +60,12 @@ type ViewResultSet interface {
 
 // viewResultSet implements the ViewResultSet interface.
 type viewResultSet struct {
-	rs ResultSet
+	rs couchdb.ResultSet
 	vr *couchdbViewResult
 }
 
-// newView provides access to the viewResultSet data.
-func newView(rs ResultSet) *viewResultSet {
+// newViewResultSet returns a ChangesResultSet.
+func newViewResultSet(rs couchdb.ResultSet) ViewResultSet {
 	vrs := &viewResultSet{
 		rs: rs,
 	}
@@ -144,9 +117,9 @@ func (vrs *viewResultSet) RowsDo(rpf RowProcessingFunc) error {
 		return err
 	}
 	for _, row := range vrs.vr.Rows {
-		key := unmarshable{row.Key}
-		value := unmarshable{row.Value}
-		doc := unmarshable{row.Document}
+		key := couchdb.NewUnmarshableJSON(row.Key)
+		value := couchdb.NewUnmarshableJSON(row.Value)
+		doc := couchdb.NewUnmarshableJSON(row.Document)
 		if err := rpf(row.ID, key, value, doc); err != nil {
 			return err
 		}

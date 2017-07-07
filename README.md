@@ -7,9 +7,12 @@ databases.
 
 I hope you like it. ;)
 
+[![Sourcegraph](https://sourcegraph.com/github.com/tideland/gocouch/-/badge.svg)](https://sourcegraph.com/github.com/tideland/gocouch?badge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tideland/gocouch)](https://goreportcard.com/report/github.com/tideland/gocouch)
+
 ## Version
 
-Version 1.0.0-beta.2017-03-09
+Version 1.0.0-beta.2017-04-09
 
 ## Packages
 
@@ -18,6 +21,19 @@ Version 1.0.0-beta.2017-03-09
 Package providing the client for the CouchDB.
 
 [![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
+
+#### Views
+
+Views allows to call CouchDB views and retrieve their results.
+
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch/views?status.svg)](https://godoc.org/github.com/tideland/gocouch/views)
+
+#### Changes
+
+Changes provides access to changes made documents in a database in time order
+of application.
+
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch/changes?status.svg)](https://godoc.org/github.com/tideland/gocouch/changes)
 
 #### Security
 
