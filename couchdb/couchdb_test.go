@@ -19,9 +19,9 @@ import (
 	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
 	"github.com/tideland/golib/identifier"
+	"github.com/tideland/golib/logger"
 
 	"github.com/tideland/gocouch/couchdb"
-	"github.com/tideland/golib/logger"
 )
 
 //--------------------
@@ -53,20 +53,19 @@ func TestAllDatabases(t *testing.T) {
 	cfg, err := couchdb.Configure("localhost", 5984, "tgocouch-testing-temporary")
 	assert.Nil(err)
 
+	// This time also use OpenPath() to check its behavior.
 	cdb, err := couchdb.OpenPath(cfg, "couchdb")
 	assert.Nil(err)
-	ids, err := cdb.AllDatabases()
+	_, err = cdb.AllDatabases()
 	assert.Nil(err)
-	assert.True(len(ids) != 0)
 
 	cfg, err = etc.ReadString(EmptyCfg)
 	assert.Nil(err)
 
 	cdb, err = couchdb.OpenPath(cfg, "")
 	assert.Nil(err)
-	ids, err = cdb.AllDatabases()
+	_, err = cdb.AllDatabases()
 	assert.Nil(err)
-	assert.True(len(ids) != 0)
 }
 
 // TestCreateDeleteDatabase tests the creation and deletion
@@ -208,92 +207,6 @@ func TestDeleteDesignDocument(t *testing.T) {
 	allDesignC, err := cdb.AllDesigns()
 	assert.Nil(err)
 	assert.Equal(len(allDesignC), len(allDesignA))
-}
-
-// TestCallingView tests calling a view.
-func TestCallingView(t *testing.T) {
-	assert := audit.NewTestingAssertion(t, true)
-	cdb, cleanup := prepareFilledDatabase("view-documents", assert)
-	defer cleanup()
-
-	// Create design document.
-	design, err := cdb.Design("testing")
-	assert.Nil(err)
-	design.SetView("index-a", "function(doc){ if (doc._id.indexOf('a') !== -1) { emit(doc._id, doc);  } }", "")
-	design.SetView("age", "function(doc){ emit(doc.age, doc.name); }", "")
-	resp := design.Write()
-	assert.True(resp.IsOK())
-
-	// Call the view for the first time.
-	vrs := cdb.View("testing", "index-a")
-	assert.True(vrs.IsOK())
-	trOld := vrs.TotalRows()
-	assert.True(trOld > 0)
-
-	// Add a matching document and view again.
-	docA := MyDocument{
-		DocumentID: "black-jack-4711",
-		Name:       "Jack Black",
-	}
-	resp = cdb.CreateDocument(docA)
-	assert.True(resp.IsOK())
-	vrs = cdb.View("testing", "index-a")
-	assert.True(vrs.IsOK())
-	trNew := vrs.TotalRows()
-	assert.Equal(trNew, trOld+1)
-	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
-		valueA := MyDocument{}
-		err := value.Unmarshal(&valueA)
-		assert.Nil(err)
-		assert.True(strings.Contains(valueA.DocumentID, "a"))
-		return err
-	})
-	assert.Nil(err)
-
-	// Add a non-matching document and view again.
-	docB := MyDocument{
-		DocumentID: "doe-john-999",
-		Name:       "John Doe",
-	}
-	resp = cdb.CreateDocument(docB)
-	assert.True(resp.IsOK())
-	vrs = cdb.View("testing", "index-a")
-	assert.True(vrs.IsOK())
-	trFinal := vrs.TotalRows()
-	assert.Equal(trFinal, trNew)
-
-	// Call age view with a key.
-	vrs = cdb.View("testing", "age", couchdb.OneKey(51))
-	assert.True(vrs.IsOK())
-	assert.True(vrs.TotalRows() > vrs.ReturnedRows())
-	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
-		var age int
-		var name string
-		err := key.Unmarshal(&age)
-		assert.Nil(err)
-		assert.Equal(age, 51)
-		err = value.Unmarshal(&name)
-		assert.Nil(err)
-		return err
-	})
-	assert.Nil(err)
-
-	// Call age view with the oldest 5 peaple below 50.
-	vrs = cdb.View("testing", "age", couchdb.StartKey(50), couchdb.Descending(), couchdb.Limit(5))
-	assert.True(vrs.IsOK())
-	assert.True(vrs.ReturnedRows() <= 5)
-	err = vrs.RowsDo(func(id string, key, value, document couchdb.Unmarshable) error {
-		var age int
-		var name string
-		err := key.Unmarshal(&age)
-		assert.Nil(err)
-		assert.True(age <= 50)
-		err = value.Unmarshal(&name)
-		assert.Nil(err)
-		assert.Logf("Tester %s has age %d", name, age)
-		return err
-	})
-	assert.Nil(err)
 }
 
 // TestCreateDocument tests creating new documents.

@@ -7,10 +7,6 @@
 
 package couchdb
 
-import (
-	"encoding/json"
-)
-
 //--------------------
 // EXTERNAL DOCUMENT TYPES
 //--------------------
@@ -37,34 +33,20 @@ type couchdbBulkDocuments struct {
 	NewEdits bool          `json:"new_edits,omitempty"`
 }
 
-// couchdbViewKeys sets key constraints for view requests.
-type couchdbViewKeys struct {
-	Keys []interface{} `json:"keys"`
-}
-
-// couchdbViewResult is a generic result of a CouchDB view.
-type couchdbViewResult struct {
-	TotalRows int             `json:"total_rows"`
-	Offset    int             `json:"offset"`
-	Rows      couchdbViewRows `json:"rows"`
-}
-
-// couchdbViewRow contains one row of a view result.
-type couchdbViewRow struct {
-	ID       string          `json:"id"`
-	Key      json.RawMessage `json:"key"`
-	Value    json.RawMessage `json:"value"`
-	Document json.RawMessage `json:"doc"`
-}
-
-type couchdbViewRows []couchdbViewRow
-
 // couchdbDocument is used to simply retrieve ID and revision of
 // a document.
 type couchdbDocument struct {
 	ID       string `json:"_id"`
 	Revision string `json:"_rev"`
 	Deleted  bool   `json:"_deleted"`
+}
+
+// couchdbRows returns rows containing IDs of documents. It's
+// part of a view document.
+type couchdbRows struct {
+	Rows []struct {
+		ID string `json:"id"`
+	}
 }
 
 // EOF
