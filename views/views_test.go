@@ -104,7 +104,7 @@ func TestCallingView(t *testing.T) {
 	})
 	assert.Nil(err)
 
-	// Call age view with the oldest 5 peaple below 50.
+	// Call age view with the oldest 5 people below 50.
 	vrs = views.View(cdb, "testing", "age", views.StartKey(50), views.Descending(), views.Limit(5))
 	assert.True(vrs.IsOK())
 	assert.True(vrs.ReturnedRows() <= 5)

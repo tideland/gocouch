@@ -76,21 +76,21 @@ func TestCreateDeleteDatabase(t *testing.T) {
 	cfg, err := couchdb.Configure("localhost", 5984, "tgocouch-testing-temporary")
 	assert.Nil(err)
 
-	// Open and check existance.
+	// Open and check existence.
 	cdb, err := couchdb.Open(cfg)
 	assert.Nil(err)
 	has, err := cdb.HasDatabase()
 	assert.Nil(err)
 	assert.False(has)
 
-	// Create and check existance,
+	// Create and check existence,
 	resp := cdb.CreateDatabase()
 	assert.True(resp.IsOK())
 	has, err = cdb.HasDatabase()
 	assert.Nil(err)
 	assert.True(has)
 
-	// Delete and check existance.
+	// Delete and check existence.
 	resp = cdb.DeleteDatabase()
 	assert.True(resp.IsOK())
 	has, err = cdb.HasDatabase()
@@ -265,7 +265,7 @@ func TestReadDocument(t *testing.T) {
 	assert.Equal(docB.Name, docA.Name)
 	assert.Equal(docB.Age, docA.Age)
 
-	// Try to read non-existant document.
+	// Try to read non-existent document.
 	resp = cdb.ReadDocument("i-do-not-exist")
 	assert.False(resp.IsOK())
 	assert.ErrorMatch(resp.Error(), ".* 404,.*")
