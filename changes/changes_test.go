@@ -44,23 +44,23 @@ func TestChanges(t *testing.T) {
 	defer cleanup()
 
 	// Simple changes access.
-	crs := changes.Changes(cdb)
-	assert.True(crs.IsOK())
-	assert.Equal(crs.ResultsLen(), count)
+	rs := changes.Changes(cdb)
+	assert.True(rs.IsOK())
+	assert.Equal(rs.Len(), count)
 
-	crs.ResultsDo(func(id, sequence string, deleted bool, revisions []string, document couchdb.Unmarshable) error {
+	rs.Do(func(id, sequence string, deleted bool, revisions []string, document couchdb.Unmarshable) error {
 		assert.Length(revisions, 1)
 		return nil
 	})
 
-	lseq := crs.LastSequence()
-	crs = changes.Changes(cdb, changes.Since(lseq))
-	assert.True(crs.IsOK())
-	assert.Equal(crs.ResultsLen(), 0)
+	lseq := rs.LastSequence()
+	rs = changes.Changes(cdb, changes.Since(lseq))
+	assert.True(rs.IsOK())
+	assert.Equal(rs.Len(), 0)
 
-	crs = changes.Changes(cdb, changes.Since(changes.SinceNow))
-	assert.True(crs.IsOK())
-	assert.Equal(crs.ResultsLen(), 0)
+	rs = changes.Changes(cdb, changes.Since(changes.SinceNow))
+	assert.True(rs.IsOK())
+	assert.Equal(rs.Len(), 0)
 
 	// Add some more documents and check changes.
 	docs := generateDocuments(gen, count)
@@ -70,13 +70,13 @@ func TestChanges(t *testing.T) {
 		assert.True(result.OK)
 	}
 
-	crs = changes.Changes(cdb)
-	assert.True(crs.IsOK())
-	assert.Equal(crs.ResultsLen(), 2*count)
+	rs = changes.Changes(cdb)
+	assert.True(rs.IsOK())
+	assert.Equal(rs.Len(), 2*count)
 
-	crs = changes.Changes(cdb, changes.Since(lseq))
-	assert.True(crs.IsOK())
-	assert.Equal(crs.ResultsLen(), count)
+	rs = changes.Changes(cdb, changes.Since(lseq))
+	assert.True(rs.IsOK())
+	assert.Equal(rs.Len(), count)
 }
 
 //--------------------
