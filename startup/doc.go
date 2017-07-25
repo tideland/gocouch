@@ -5,7 +5,7 @@
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-// The Startup package of the Tideland Go CouchDB Client provides a simple
+// Package startup of the Tideland Go CouchDB Client provides a simple
 // mechanism for the initial creation an startup and maintenance of CouchDB
 // databases.
 //
