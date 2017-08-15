@@ -12,6 +12,7 @@ package find_test
 //--------------------
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/tideland/golib/audit"
@@ -36,11 +37,34 @@ func TestSelector(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
 	// And selector.
-	selector := find.NewAndSelector().
+	andSel := find.NewAndSelector().
 		Equal("foo", 4711).
 		Equal("bar", "42")
 
-	assert.NotNil(selector)
+	assert.NotNil(andSel)
+
+	b, err := json.Marshal(andSel)
+	assert.Nil(err)
+	assert.Logf("SELECTOR %s", string(b))
+
+	// Or selector.
+	orSel := find.NewOrSelector().
+		Equal("yadda", true)
+
+	assert.NotNil(orSel)
+
+	b, err = json.Marshal(orSel)
+	assert.Nil(err)
+	assert.Logf("SELECTOR %s", string(b))
+
+	// Combine these two.
+	combSel := find.NewAndSelector().
+		SubSelectors(andSel, orSel)
+
+	b, err = json.Marshal(combSel)
+	assert.Nil(err)
+	assert.Logf("SELECTOR %s", string(b))
+
 }
 
 // EOF

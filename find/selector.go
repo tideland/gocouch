@@ -56,45 +56,45 @@ func NewOrSelector() Selector {
 }
 
 // SubSelectors implements Selector.
-func (sel *selector) SubSelectors(sels ...Selector) Selector {
-	for _, subsel := range sels {
-		sel.arguments = append(sel.arguments, subsel)
+func (s *selector) SubSelectors(selectors ...Selector) Selector {
+	for _, sub := range selectors {
+		s.arguments = append(s.arguments, sub)
 	}
-	return sel
+	return s
 }
 
-func (sel *selector) Equal(field string, argument interface{}) Selector {
-	sel.arguments = append(sel.arguments, &selector{
+func (s *selector) Equal(field string, argument interface{}) Selector {
+	s.arguments = append(s.arguments, &selector{
 		field:     field,
+		operator:  "$eq",
 		arguments: []interface{}{argument},
 	})
-	return sel
+	return s
 }
 
 // MarshalJSON implements json.Marshaler.
-func (sel *selector) MarshalJSON() ([]byte, error) {
-	if sel.field != "" {
-		// Single field.
-		var jArguments []string
-		var jArgument string
-		for _, argument := range sel.arguments {
-			b, err := json.Marshal(argument)
-			if err != nil {
-				return nil, err
-			}
-			jArguments = append(jArguments, string(b))
+func (s *selector) MarshalJSON() ([]byte, error) {
+	// First operator and argument(s).
+	var jArguments []string
+	var jArgument string
+	for _, argument := range s.arguments {
+		b, err := json.Marshal(argument)
+		if err != nil {
+			return nil, err
 		}
-		if len(jArguments) == 1 {
-			jArgument = jArguments[0]
-		} else {
-			jArgument = "[" + strings.Join(jArguments, ",") + "]"
-		}
-		jOperator := "{\"" + sel.operator + "\":" + jArgument + "}"
-		jSelector := "{\"" + sel.field + "\":" + jOperator + "}"
-		return []byte(jSelector), nil
+		jArguments = append(jArguments, string(b))
 	}
-	// Operator.
-	return nil, nil
+	if len(jArguments) == 1 {
+		jArgument = jArguments[0]
+	} else {
+		jArgument = "[" + strings.Join(jArguments, ",") + "]"
+	}
+	jOperatorArgument := "{\"" + s.operator + "\":" + jArgument + "}"
+	if s.field == "" {
+		return []byte(jOperatorArgument), nil
+	}
+	jField := "{\"" + s.field + "\":" + jOperatorArgument + "}"
+	return []byte(jField), nil
 }
 
 // EOF
