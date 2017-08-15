@@ -31,7 +31,7 @@ func Changes(cdb couchdb.CouchDB, params ...couchdb.Parameter) ResultSet {
 // CHANGES RESULT SET
 //--------------------
 
-// Processor is a function processing the content of a changes row.
+// Processor is a function processing the content of a changed document.
 type Processor func(id, sequence string, deleted bool, revisions []string, document couchdb.Unmarshable) error
 
 // ResultSet contains the result set of a change.
