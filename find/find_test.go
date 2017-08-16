@@ -37,7 +37,7 @@ func TestSelector(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
 	// And selector.
-	andSel := find.NewAndSelector().
+	andSel := find.NewSelector(find.CombineAnd).
 		Equal("foo", 4711).
 		Equal("bar", "42")
 
@@ -48,8 +48,9 @@ func TestSelector(t *testing.T) {
 	assert.Logf("SELECTOR %s", string(b))
 
 	// Or selector.
-	orSel := find.NewOrSelector().
-		Equal("yadda", true)
+	orSel := find.NewSelector(find.CombineOr).
+		Equal("yadda", true).
+		Equal("yuddu", 123.45)
 
 	assert.NotNil(orSel)
 
@@ -58,8 +59,7 @@ func TestSelector(t *testing.T) {
 	assert.Logf("SELECTOR %s", string(b))
 
 	// Combine these two.
-	combSel := find.NewAndSelector().
-		SubSelectors(andSel, orSel)
+	combSel := find.NewSelector(find.CombineAnd, andSel, orSel)
 
 	b, err = json.Marshal(combSel)
 	assert.Nil(err)
