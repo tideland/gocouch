@@ -12,8 +12,9 @@ package find
 //--------------------
 
 import (
+	"bytes"
 	"encoding/json"
-	"strings"
+	"fmt"
 )
 
 //--------------------
@@ -26,6 +27,7 @@ type CombinationOperator int
 const (
 	CombineAnd CombinationOperator = iota + 1
 	CombineOr
+	CombineNot
 	CombineNone
 )
 
@@ -41,8 +43,11 @@ type Selector interface {
 	// In checks if the field is in the arguments.
 	In(field string, arguments ...interface{}) Selector
 
+	// All checks if the field is an array and contains all the arguments.
+	All(field string, arguments ...interface{}) Selector
+
 	// GreaterThan checks if the field is greater than the argument.
-	GreaterThan(field, argument interface{})
+	GreaterThan(field string, argument interface{}) Selector
 
 	// Marshaler allows to write a selector in its JSON encoding.
 	json.Marshaler
@@ -62,6 +67,7 @@ func NewSelector(co CombinationOperator, selectors ...Selector) Selector {
 	ops := map[CombinationOperator]string{
 		CombineAnd:  "$and",
 		CombineOr:   "$or",
+		CombineNot:  "$not",
 		CombineNone: "$nor",
 	}
 	op, ok := ops[co]
@@ -98,6 +104,16 @@ func (s *selector) In(field string, arguments ...interface{}) Selector {
 	return s
 }
 
+// All implements Selector.
+func (s *selector) All(field string, arguments ...interface{}) Selector {
+	s.arguments = append(s.arguments, &selector{
+		field:     field,
+		operator:  "$all",
+		arguments: arguments,
+	})
+	return s
+}
+
 // GreaterThan implements Selector.
 func (s *selector) GreaterThan(field string, argument interface{}) Selector {
 	s.arguments = append(s.arguments, &selector{
@@ -110,27 +126,44 @@ func (s *selector) GreaterThan(field string, argument interface{}) Selector {
 
 // MarshalJSON implements json.Marshaler.
 func (s *selector) MarshalJSON() ([]byte, error) {
-	// First operator and argument(s).
-	var jArguments []string
-	var jArgument string
+	var sbuf bytes.Buffer
+	var jargs [][]byte
+	var jargslen int
+
 	for _, argument := range s.arguments {
-		b, err := json.Marshal(argument)
+		jarg, err := json.Marshal(argument)
 		if err != nil {
 			return nil, err
 		}
-		jArguments = append(jArguments, string(b))
+		jargs = append(jargs, jarg)
 	}
-	if len(jArguments) == 1 {
-		jArgument = jArguments[0]
-	} else {
-		jArgument = "[" + strings.Join(jArguments, ",") + "]"
+	jargslen = len(jargs)
+
+	// Prepend with field if needed.
+	if s.field != "" {
+		fmt.Fprintf(&sbuf, "{%q:", s.field)
 	}
-	jOperatorArgument := "{\"" + s.operator + "\":" + jArgument + "}"
-	if s.field == "" {
-		return []byte(jOperatorArgument), nil
+	// Now operator and argument8s).
+	fmt.Fprintf(&sbuf, "{%q:", s.operator)
+	if jargslen > 1 {
+		fmt.Fprintf(&sbuf, "[")
 	}
-	jField := "{\"" + s.field + "\":" + jOperatorArgument + "}"
-	return []byte(jField), nil
+	for i, jarg := range jargs {
+		fmt.Fprintf(&sbuf, "%s", jarg)
+		if i < jargslen-1 {
+			fmt.Fprint(&sbuf, ",")
+		}
+	}
+	if jargslen > 1 {
+		fmt.Fprint(&sbuf, "]")
+	}
+	fmt.Fprint(&sbuf, "}")
+	// Append closing brace if field has been prepended.
+	if s.field != "" {
+		fmt.Fprint(&sbuf, "}")
+	}
+
+	return sbuf.Bytes(), nil
 }
 
 // EOF
