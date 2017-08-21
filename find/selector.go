@@ -188,7 +188,9 @@ func newSelector(operator string, conditioner func(Selector)) Selector {
 	s := &selector{
 		operator: operator,
 	}
-	conditioner(s)
+	if conditioner != nil {
+		conditioner(s)
+	}
 	return s
 }
 
