@@ -44,7 +44,16 @@ func TestSelector(t *testing.T) {
 
 	b, err := json.Marshal(selectorA)
 	assert.Nil(err)
-	assert.Logf("SELECTOR A) %s", string(b))
+	assert.Equal(string(b), `{"$and":[{"foo":{"$eq":4711}},{"years":{"$in":[1965,1989,2017]}},`+
+		`{"$or":[{"genre":{"$all":["comedy","short"]}},{"age":{"$ne":18}}]},{"$not":{"count":{"$gt":4711}}}]}`)
+
+	selectorB := find.SelectOr(nil)
+	selectorB.Equal("left", true)
+	selectorB.GreaterThan("height", 100).Not()
+
+	b, err = json.Marshal(selectorB)
+	assert.Nil(err)
+	assert.Equal(string(b), `{"$or":[{"left":{"$eq":true}},{"$not":{"height":{"$gt":100}}}]}`)
 }
 
 // EOF
