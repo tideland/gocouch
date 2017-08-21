@@ -11,15 +11,6 @@ package find_test
 // IMPORTS
 //--------------------
 
-import (
-	"encoding/json"
-	"testing"
-
-	"github.com/tideland/golib/audit"
-
-	"github.com/tideland/gocouch/find"
-)
-
 //--------------------
 // CONSTANTS
 //--------------------
@@ -31,40 +22,5 @@ const (
 //--------------------
 // TESTS
 //--------------------
-
-// TestSelector tests creating selectors.
-func TestSelector(t *testing.T) {
-	assert := audit.NewTestingAssertion(t, true)
-
-	// And selector.
-	andSel := find.NewSelector(find.CombineAnd).
-		Equal("foo", 4711).
-		Equal("bar", "42")
-
-	assert.NotNil(andSel)
-
-	b, err := json.Marshal(andSel)
-	assert.Nil(err)
-	assert.Logf("SELECTOR %s", string(b))
-
-	// Or selector.
-	orSel := find.NewSelector(find.CombineOr).
-		Equal("yadda", true).
-		Equal("yuddu", 123.45)
-
-	assert.NotNil(orSel)
-
-	b, err = json.Marshal(orSel)
-	assert.Nil(err)
-	assert.Logf("SELECTOR %s", string(b))
-
-	// Combine these two.
-	combSel := find.NewSelector(find.CombineAnd, andSel, orSel)
-
-	b, err = json.Marshal(combSel)
-	assert.Nil(err)
-	assert.Logf("SELECTOR %s", string(b))
-
-}
 
 // EOF
