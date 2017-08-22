@@ -21,6 +21,19 @@ import (
 // CONSTANTS
 //--------------------
 
+// FieldType describes the valid types of document fields.
+type FieldType string
+
+// List of valid field types.
+const (
+	FieldTypeNull    FieldType = "null"
+	FieldTypeBoolean FieldType = "boolean"
+	FieldTypeNumber  FieldType = "number"
+	FieldTypeString  FieldType = "string"
+	FieldTypeArray   FieldType = "array"
+	FieldTypeObject  FieldType = "object"
+)
+
 //--------------------
 // SELECTOR
 //--------------------
@@ -42,11 +55,38 @@ type Selector interface {
 	// In checks if the field is in the arguments.
 	In(field string, arguments ...interface{}) Negatable
 
+	// NotIn checks if the field is not in the arguments.
+	NotIn(field string, arguments ...interface{}) Negatable
+
+	// Size checks the length of the array addressed with field.
+	Size(field string, size int) Negatable
+
 	// All checks if the field is an array and contains all the arguments.
 	All(field string, arguments ...interface{}) Negatable
 
 	// GreaterThan checks if the field is greater than the argument.
 	GreaterThan(field string, argument interface{}) Negatable
+
+	// GreaterEqualThan checks if the field is greater or equal than the argument.
+	GreaterEqualThan(field string, argument interface{}) Negatable
+
+	// LowerThan checks if the field is greater than the argument.
+	LowerThan(field string, argument interface{}) Negatable
+
+	// LowerEqualThan checks if the field is greater or equal than the argument.
+	LowerEqualThan(field string, argument interface{}) Negatable
+
+	// Exists checks if the field exists.
+	Exists(field string) Negatable
+
+	// Type checks the type of the field.
+	Type(field string, argument FieldType) Negatable
+
+	// Modulo checks the remainder of the field devided by divisor.
+	Modulo(field string, divisor, remainder int) Negatable
+
+	// RegExp checks if the field matches the given pattern.
+	RegExp(field, pattern string) Negatable
 
 	// Append adds an other selector to this one.
 	Append(subselector Selector)
@@ -74,33 +114,78 @@ func SelectAnd(conditioner func(s Selector)) Selector {
 
 // SelectOr creates a combination selector where any selectors
 // have to be true.
-func SelectOr(conditioner func(as Selector)) Selector {
+func SelectOr(conditioner func(s Selector)) Selector {
 	return newSelector("$or", conditioner)
 }
 
 // Equal implements Selector.
 func (s *selector) Equal(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$eq", []interface{}{argument})
+	return s.appendSubselector(field, "$eq", argument)
 }
 
 // NotEqual implements Selector.
 func (s *selector) NotEqual(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$ne", []interface{}{argument})
+	return s.appendSubselector(field, "$ne", argument)
 }
 
 // In implements Selector.
 func (s *selector) In(field string, arguments ...interface{}) Negatable {
-	return s.appendSubselector(field, "$in", arguments)
+	return s.appendSubselector(field, "$in", arguments...)
+}
+
+// NotIn implements Selector.
+func (s *selector) NotIn(field string, arguments ...interface{}) Negatable {
+	return s.appendSubselector(field, "$nin", arguments...)
+}
+
+// Size implements Selector.
+func (s *selector) Size(field string, size int) Negatable {
+	return s.appendSubselector(field, "$size", size)
 }
 
 // All implements Selector.
 func (s *selector) All(field string, arguments ...interface{}) Negatable {
-	return s.appendSubselector(field, "$all", arguments)
+	return s.appendSubselector(field, "$all", arguments...)
 }
 
 // GreaterThan implements Selector.
 func (s *selector) GreaterThan(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$gt", []interface{}{argument})
+	return s.appendSubselector(field, "$gt", argument)
+}
+
+// GreaterEqualThan implements Selector.
+func (s *selector) GreaterEqualThan(field string, argument interface{}) Negatable {
+	return s.appendSubselector(field, "$gte", argument)
+}
+
+// LowerThan implements Selector.
+func (s *selector) LowerThan(field string, argument interface{}) Negatable {
+	return s.appendSubselector(field, "$lt", argument)
+}
+
+// LowerEqualThan implements Selector.
+func (s *selector) LowerEqualThan(field string, argument interface{}) Negatable {
+	return s.appendSubselector(field, "$lte", argument)
+}
+
+// Exists implements Selector.
+func (s *selector) Exists(field string) Negatable {
+	return s.appendSubselector(field, "$exists", true)
+}
+
+// Type implements Selector.
+func (s *selector) Type(field string, argument FieldType) Negatable {
+	return s.appendSubselector(field, "$type", argument)
+}
+
+// Modulo implements Selector.
+func (s *selector) Modulo(field string, divisor, remainder int) Negatable {
+	return s.appendSubselector(field, "$mod", divisor, remainder)
+}
+
+// RegExp implements Selector.
+func (s *selector) RegExp(field, pattern string) Negatable {
+	return s.appendSubselector(field, "$regex", pattern)
 }
 
 // Append implements Selector.
@@ -169,7 +254,7 @@ func (s *selector) MarshalJSON() ([]byte, error) {
 
 // appendSubselector creates and appends a subselector based on field,
 // operator, and arguments.
-func (s *selector) appendSubselector(field, operator string, arguments []interface{}) Negatable {
+func (s *selector) appendSubselector(field, operator string, arguments ...interface{}) Negatable {
 	subselector := &selector{
 		field:     field,
 		operator:  operator,
