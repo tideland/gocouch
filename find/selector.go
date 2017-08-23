@@ -34,6 +34,16 @@ const (
 	FieldTypeObject  FieldType = "object"
 )
 
+// Operators expecting an array.
+var arrayOperators = map[string]bool{
+	"$and": true,
+	"$or":  true,
+	"$nor": true,
+	"$all": true,
+	"$in":  true,
+	"$nin": true,
+}
+
 //--------------------
 // SELECTOR
 //--------------------
@@ -116,6 +126,12 @@ func SelectAnd(conditioner func(s Selector)) Selector {
 // have to be true.
 func SelectOr(conditioner func(s Selector)) Selector {
 	return newSelector("$or", conditioner)
+}
+
+// SelectNone creates a combination selector where none of the
+// selectors has to be true.
+func SelectNone(conditioner func(s Selector)) Selector {
+	return newSelector("$nor", conditioner)
 }
 
 // Equal implements Selector.
@@ -204,6 +220,7 @@ func (s *selector) MarshalJSON() ([]byte, error) {
 	var jargs [][]byte
 	var jargslen int
 
+	// Praparations first.
 	for _, argument := range s.arguments {
 		jarg, err := json.Marshal(argument)
 		if err != nil {
@@ -222,11 +239,9 @@ func (s *selector) MarshalJSON() ([]byte, error) {
 		fmt.Fprintf(&sbuf, "{%q:", s.field)
 	}
 	// Now operator and argument(s).
-	if s.operator != "" {
-		fmt.Fprintf(&sbuf, "{%q:", s.operator)
-	}
-	if jargslen > 1 {
-		fmt.Fprintf(&sbuf, "[")
+	fmt.Fprintf(&sbuf, "{%q:", s.operator)
+	if arrayOperators[s.operator] {
+		fmt.Fprint(&sbuf, "[")
 	}
 	for i, jarg := range jargs {
 		fmt.Fprintf(&sbuf, "%s", jarg)
@@ -234,12 +249,10 @@ func (s *selector) MarshalJSON() ([]byte, error) {
 			fmt.Fprint(&sbuf, ",")
 		}
 	}
-	if jargslen > 1 {
+	if arrayOperators[s.operator] {
 		fmt.Fprint(&sbuf, "]")
 	}
-	if s.operator != "" {
-		fmt.Fprint(&sbuf, "}")
-	}
+	fmt.Fprint(&sbuf, "}")
 	// Append closing brace if field has been prepended.
 	if s.field != "" {
 		fmt.Fprint(&sbuf, "}")

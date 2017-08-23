@@ -33,8 +33,13 @@ type Request struct {
 }
 
 // Find returns access to the found results.
-func Find(cdb couchdb.CouchDB, request Request) ResultSet {
-	rs := cdb.Post(cdb.DatabasePath("_find"), request)
+func Find(cdb couchdb.CouchDB, selector Selector, parameters ...Parameter) ResultSet {
+	// Create request object.
+	req := request{}
+	req.SetParameter("selector", selector)
+	req.apply(parameters...)
+	// Perform find command.
+	rs := cdb.Post(cdb.DatabasePath("_find"), req)
 	return newResultSet(rs)
 }
 
@@ -131,6 +136,26 @@ func (frs *resultSet) readResponse() error {
 	return nil
 }
 
+//--------------------
+// REQUEST AND RESPONSE
+//--------------------
+
+// request contains all request object fields.
+type request map[string]interface{}
+
+// SetParameter implements Parameterizable.
+func (req request) SetParameter(key string, parameter interface{}) {
+	req[key] = parameter
+}
+
+// apply applies a list of parameters to the request.
+func (req request) apply(parameters ...Parameter) {
+	for _, applyParameterTo := range parameters {
+		applyParameterTo(req)
+	}
+}
+
+// response describes the document returned by CouchDB.
 type response struct {
 	Warning   string            `json:"warning"`
 	Documents []json.RawMessage `json:"docs"`
