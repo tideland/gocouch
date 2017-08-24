@@ -21,17 +21,6 @@ import (
 // API
 //--------------------
 
-// Request contains the parameters of a find request.
-// TODO(mue) Think about selector as fixed argument and
-// optional parameters.
-type Request struct {
-	Selector Selector `json:"selector"`
-	Limit    int      `json:"limit,omitempty"`
-	Skip     int      `json:"skip,omitempty"`
-	Sort     string   `json:"sort,omitempty"`
-	Fields   []string `json:"fields,omitempty"`
-}
-
 // Find returns access to the found results.
 func Find(cdb couchdb.CouchDB, selector Selector, parameters ...Parameter) ResultSet {
 	// Create request object.
