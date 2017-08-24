@@ -54,8 +54,9 @@ func TestSimpleFind(t *testing.T) {
 			as.Equal("active", true)
 		}))
 	})
-	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"))
-	assert.NotNil(frs)
+	b, merr := selector.MarshalJSON()
+	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"), find.Sort(find.Ascending("name")))
+	assert.Nil(frs.Error())
 	assert.True(frs.IsOK())
 
 	err := frs.Do(func(document couchdb.Unmarshable) error {
@@ -203,6 +204,8 @@ func prepareFilledDatabase(database string, count int, assert audit.Assertion) (
 	rs := cdb.DeleteDatabase()
 	rs = cdb.CreateDatabase()
 	assert.True(rs.IsOK())
+	err = find.CreateIndex(cdb, find.NewIndex("name"))
+	assert.Nil(err)
 
 	gen := audit.NewGenerator(audit.FixedRand())
 	runs := count / 1000
