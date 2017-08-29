@@ -21,6 +21,7 @@ import (
 
 // Index defines the needed information for creation of an index.
 type Index interface {
+	// Parameters returns the parameters of the index to create.
 	Parameters() []Parameter
 }
 

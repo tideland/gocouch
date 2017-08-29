@@ -60,8 +60,9 @@ type ResultSet interface {
 
 // resultSet implements the ResultSet interface.
 type resultSet struct {
-	rs       couchdb.ResultSet
-	response *response
+	rs          couchdb.ResultSet
+	response    *response
+	responseErr error
 }
 
 // newResultSet returns a ResultSet.
@@ -69,12 +70,19 @@ func newResultSet(rs couchdb.ResultSet) ResultSet {
 	frs := &resultSet{
 		rs: rs,
 	}
+	resp := response{}
+	err := frs.rs.Document(&resp)
+	if err != nil {
+		frs.responseErr = err
+	} else {
+		frs.response = &resp
+	}
 	return frs
 }
 
 // IsOK implements the ResultSet interface.
 func (frs *resultSet) IsOK() bool {
-	return frs.rs.IsOK()
+	return frs.rs.IsOK() && frs.responseErr == nil
 }
 
 // StatusCode implements the ResultSet interface.
@@ -84,12 +92,15 @@ func (frs *resultSet) StatusCode() int {
 
 // Error implements the ResultSet interface.
 func (frs *resultSet) Error() error {
-	return frs.rs.Error()
+	if frs.rs.Error() != nil {
+		return frs.rs.Error()
+	}
+	return frs.responseErr
 }
 
 // Len implements ResultSet.
 func (frs *resultSet) Len() int {
-	if err := frs.readResponse(); err != nil {
+	if !frs.IsOK() {
 		return -1
 	}
 	return len(frs.response.Documents)
@@ -97,30 +108,11 @@ func (frs *resultSet) Len() int {
 
 // Do implements ResultSet.
 func (frs *resultSet) Do(process Processor) error {
-	if err := frs.readResponse(); err != nil {
-		return err
-	}
 	for _, doc := range frs.response.Documents {
 		unmarshableDoc := couchdb.NewUnmarshableJSON(doc)
 		if err := process(unmarshableDoc); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// readResponse lazily reads and analyzes response.
-func (frs *resultSet) readResponse() error {
-	if !frs.IsOK() {
-		return frs.Error()
-	}
-	if frs.response == nil {
-		resp := response{}
-		err := frs.rs.Document(&resp)
-		if err != nil {
-			return err
-		}
-		frs.response = &resp
 	}
 	return nil
 }
