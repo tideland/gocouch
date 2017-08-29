@@ -54,8 +54,7 @@ func TestSimpleFind(t *testing.T) {
 			as.Equal("active", true)
 		}))
 	})
-	b, merr := selector.MarshalJSON()
-	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"), find.Sort(find.Ascending("name")))
+	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"))
 	assert.Nil(frs.Error())
 	assert.True(frs.IsOK())
 
@@ -81,7 +80,7 @@ func TestLimitedFind(t *testing.T) {
 	cdb, cleanup := prepareFilledDatabase("find-limited", 1000, assert)
 	defer cleanup()
 
-	// Try to find some documents a simple way.
+	// Limit found documents.
 	selector := find.SelectAnd(func(as find.Selector) {
 		as.Equal("active", true)
 	})
@@ -90,10 +89,43 @@ func TestLimitedFind(t *testing.T) {
 	assert.True(frs.IsOK())
 	assert.Length(frs, 5)
 
-	frs = find.Find(cdb, selector, find.Fields("name", "active"), find.Limit(50))
+	// Greater limit.
+	frs = find.Find(cdb, selector, find.Fields("name", "active"), find.Limit(100))
 	assert.NotNil(frs)
 	assert.True(frs.IsOK())
-	assert.Length(frs, 50)
+	assert.Length(frs, 100)
+}
+
+// TestSortedFind tests retrieving a larger number in a sorted way.
+func TestSortedFind(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb, cleanup := prepareFilledDatabase("find-sorted", 1000, assert)
+	defer cleanup()
+
+	// Sorting field has to be part of selector.
+	selector := find.SelectAnd(func(as find.Selector) {
+		as.GreaterThan("name", nil)
+		as.Equal("active", true)
+	})
+	frs := find.Find(cdb, selector, find.Fields("name", "age"), find.Sort(find.Ascending("name")), find.Limit(1000))
+	assert.NotNil(frs)
+	assert.True(frs.IsOK())
+
+	name := ""
+	err := frs.Do(func(document couchdb.Unmarshable) error {
+		fields := struct {
+			Name string `json:"name"`
+			Age  int    `json:"age"`
+		}{}
+		if err := document.Unmarshal(&fields); err != nil {
+			return err
+		}
+		assert.Logf("person with name %s has age %d", fields.Name, fields.Age)
+		assert.True(fields.Name >= name)
+		name = fields.Name
+		return nil
+	})
+	assert.Nil(err)
 }
 
 // TestFindExists tests calling find with an exists selector.
