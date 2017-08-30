@@ -32,11 +32,32 @@ func Fields(fields ...string) Parameter {
 	}
 }
 
+// Sort sets how to sort the result by ascending or descending
+// sorted fields.
+func Sort(fields ...Direction) Parameter {
+	return func(pa Parameterizable) {
+		sort := []map[string]string{}
+		for _, field := range fields {
+			sort = append(sort, map[string]string{
+				field.Field(): field.Direction(),
+			})
+		}
+		pa.SetParameter("sort", sort)
+	}
+}
+
 // Limit sets the maximum number of results returned. Default
 // by database is 25.
 func Limit(limit int) Parameter {
 	return func(pa Parameterizable) {
 		pa.SetParameter("limit", limit)
+	}
+}
+
+// Skip sets the skipped first results.
+func Skip(skip int) Parameter {
+	return func(pa Parameterizable) {
+		pa.SetParameter("skip", skip)
 	}
 }
 
@@ -52,17 +73,36 @@ func UseIndex(designDocument, name string) Parameter {
 	}
 }
 
-// Sort sets how to sort the result by ascending or descending
-// sorted fields.
-func Sort(fields ...Direction) Parameter {
+// ReadQuorum sets the needed read quorum for the result. The default is 1,
+// so that the document found un the index is returned. Higher quorums forces
+// to read from more replicas. This case needs more time.
+func ReadQuorum(quorum int) Parameter {
 	return func(pa Parameterizable) {
-		sort := []map[string]string{}
-		for _, field := range fields {
-			sort = append(sort, map[string]string{
-				field.Field(): field.Direction(),
-			})
-		}
-		pa.SetParameter("sort", sort)
+		pa.SetParameter("r", quorum)
+	}
+}
+
+// Bookmark enables to specify which page of results is required. Every
+// query returns an opaque string under the bookmark key that can be passed
+// this way. Only works for indexes of type "text".
+func Bookmark(bookmark string) Parameter {
+	return func(pa Parameterizable) {
+		pa.SetParameter("bookmark", bookmark)
+	}
+}
+
+// Update sets whether to update the index prior to returning the result.
+// Default is true.
+func Update(update bool) Parameter {
+	return func(pa Parameterizable) {
+		pa.SetParameter("update", update)
+	}
+}
+
+// Stable sets whether to view results from a "stable" set of shards.
+func Stable(stable bool) Parameter {
+	return func(pa Parameterizable) {
+		pa.SetParameter("stable", stable)
 	}
 }
 

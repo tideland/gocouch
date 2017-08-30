@@ -45,7 +45,7 @@ var arrayOperators = map[string]bool{
 }
 
 //--------------------
-// SELECTOR
+// NEGATABLE
 //--------------------
 
 // Negatable allows to negate a selector.
@@ -53,6 +53,105 @@ type Negatable interface {
 	// Not negates a selector.
 	Not()
 }
+
+//--------------------
+// CRITERION
+//--------------------
+
+type Criterion interface {
+	// Negatable allows to negate this selector.
+	Negatable
+
+	// Marshaler allows to write this selector in its JSON encoding.
+	json.Marshaler
+}
+
+type criterion struct {
+	not       bool
+	field     string
+	operator  string
+	arguments []interface{}
+}
+
+func newValuesCriterion(field, operator string, values ...interface{}) *criterion {
+	return &criterion{
+		field:     field,
+		operator:  operator,
+		arguments: values,
+	}
+}
+
+func newCriteriaCriterion(field, operator string, criteria ...Criterion) *criterion {
+	arguments := make([]interface{}, len(criteria))
+	for i, c := range criteria {
+		arguments[i] = c
+	}
+	return newValuesCriterion(field, operator, arguments...)
+}
+
+// Not implements Negatable.
+func (c *criterion) Not() {
+	c.not = true
+}
+
+// MarshalJSON implements json.Marshaler.
+func (c *criterion) MarshalJSON() ([]byte, error) {
+	var sbuf bytes.Buffer
+	var jargs [][]byte
+	var jargslen int
+
+	// Praparations first.
+	for _, argument := range c.arguments {
+		jarg, err := json.Marshal(argument)
+		if err != nil {
+			return nil, err
+		}
+		jargs = append(jargs, jarg)
+	}
+	jargslen = len(jargs)
+
+	// Is negated?
+	if c.not {
+		fmt.Fprint(&sbuf, "{\"$not\":")
+	}
+	// Prepend with field if needed.
+	if c.field != "" {
+		fmt.Fprintf(&sbuf, "{%q:", c.field)
+	}
+	// Now operator and argument(s).
+	fmt.Fprintf(&sbuf, "{%q:", c.operator)
+	if arrayOperators[c.operator] {
+		fmt.Fprint(&sbuf, "[")
+	}
+	for i, jarg := range jargs {
+		fmt.Fprintf(&sbuf, "%s", jarg)
+		if i < jargslen-1 {
+			fmt.Fprint(&sbuf, ",")
+		}
+	}
+	if arrayOperators[c.operator] {
+		fmt.Fprint(&sbuf, "]")
+	}
+	fmt.Fprint(&sbuf, "}")
+	// Append closing brace if field has been prepended.
+	if c.field != "" {
+		fmt.Fprint(&sbuf, "}")
+	}
+	// Append closing brace if selector is negated.
+	if c.not {
+		fmt.Fprint(&sbuf, "}")
+	}
+
+	return sbuf.Bytes(), nil
+}
+
+func And(criteria ...Criterion) Criterion {
+	return newCriteriaCriterion("", "$and", criteria...)
+}
+
+//--------------------
+// SELECTOR
+//--------------------
 
 // Selector contains one or more conditions to find documents.
 type Selector interface {
