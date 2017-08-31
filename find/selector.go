@@ -69,30 +69,63 @@ type Criterion interface {
 	json.Marshaler
 }
 
+// Criteria defines a number of selector criteria.
+type Criteria json.Marshaler
+
+// criteria implements Criteria.
+type criteria []Criterion
+
+// MarshalJSON implements json.Marshaler.
+func (cs criteria) MarshalJSON() ([]byte, error) {
+	// Special case: Only one criterion.
+	if len(cs) == 1 {
+		return cs[0].MarshalJSON()
+	}
+	// Regular case.
+	var buf bytes.Buffer
+	var cslen = len(cs)
+
+	fmt.Fprint(&buf, "{")
+	for i, c := range cs {
+		b, err := c.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(b[1 : len(b)-1])
+		if i < cslen-1 {
+			fmt.Fprint(&buf, ",")
+		}
+	}
+	fmt.Fprint(&buf, "}")
+
+	return buf.Bytes(), nil
+}
+
 // criterion implements Criterion.
 type criterion struct {
-	not       bool
-	field     string
-	operator  string
-	arguments []interface{}
+	not      bool
+	field    string
+	operator string
+	criteria Criteria
+	values   []interface{}
 }
 
 // newValuesCriterion creates a createrion with N values as arguments.
 func newValuesCriterion(field, operator string, values ...interface{}) *criterion {
 	return &criterion{
-		field:     field,
-		operator:  operator,
-		arguments: values,
+		field:    field,
+		operator: operator,
+		values:   values,
 	}
 }
 
 // newCriteriaCriterion creates a createrion with N criteria as arguments.
 func newCriteriaCriterion(field, operator string, criteria ...Criterion) *criterion {
-	arguments := make([]interface{}, len(criteria))
-	for i, c := range criteria {
-		arguments[i] = c
+	return &criterion{
+		field:    field,
+		operator: operator,
+		criteria: Criteria(criteria),
 	}
-	return newValuesCriterion(field, operator, arguments...)
 }
 
 // Not implements Criterion.
@@ -104,18 +137,18 @@ func (c *criterion) Not() Criterion {
 // MarshalJSON implements json.Marshaler.
 func (c *criterion) MarshalJSON() ([]byte, error) {
 	var sbuf bytes.Buffer
-	var jargs [][]byte
-	var jargslen int
+	var jvalues [][]byte
+	var jvalueslen int
 
-	// Praparations first.
-	for _, argument := range c.arguments {
-		jarg, err := json.Marshal(argument)
+	// Preparations first.
+	for _, value := range c.values {
+		jvalue, err := json.Marshal(value)
 		if err != nil {
 			return nil, err
 		}
-		jargs = append(jargs, jarg)
+		jvalues = append(jvalues, jvalue)
 	}
-	jargslen = len(jargs)
+	jvalueslen = len(jvalues)
 
 	// Is negated?
 	if c.not {
@@ -125,19 +158,34 @@ func (c *criterion) MarshalJSON() ([]byte, error) {
 	if c.field != "" {
 		fmt.Fprintf(&sbuf, "{%q:", c.field)
 	}
-	// Now operator and argument(s).
+	// Now operator and values(s).
 	fmt.Fprintf(&sbuf, "{%q:", c.operator)
-	if arrayOperators[c.operator] {
-		fmt.Fprint(&sbuf, "[")
-	}
-	for i, jarg := range jargs {
-		fmt.Fprintf(&sbuf, "%s", jarg)
-		if i < jargslen-1 {
-			fmt.Fprint(&sbuf, ",")
+	// Decide between criteria and values.
+	if c.criteria != nil {
+		// Criteria.
+		b, err := c.criteria.MarshalJSON()
+		if err != nil {
+			return nil, err
 		}
-	}
-	if arrayOperators[c.operator] {
-		fmt.Fprint(&sbuf, "]")
+		sbuf.Write(b)
+	} else {
+		// Value(s).
+		vlen := len(c.values)
+		if arrayOperators[c.operator] {
+			fmt.Fprint(&sbuf, "[")
+		}
+		for i, value := range c.values {
+			b, err := json.Marshal(value)
+			if err != nil {
+				return nil, err
+			}
+			if i < vlen-1 {
+				fmt.Fprint(&sbuf, ",")
+			}
+		}
+		if arrayOperators[c.operator] {
+			fmt.Fprint(&sbuf, "]")
+		}
 	}
 	fmt.Fprint(&sbuf, "}")
 	// Append closing brace if field has been prepended.
@@ -242,40 +290,11 @@ func RegExp(field, pattern string) Criterion {
 //--------------------
 
 // Selector contains one or more criteria to find documents.
-type Selector json.Marshaler
-
-// selector implements Selector.
-type selector []Criterion
-
-// MarshalJSON implements json.Marshaler.
-func (s selector) MarshalJSON() ([]byte, error) {
-	// Special case: Only one criterion.
-	if len(s) == 1 {
-		return s[0].MarshalJSON()
-	}
-	// Regular case.
-	var buf bytes.Buffer
-	var slen = len(s)
-
-	fmt.Fprint(&buf, "{")
-	for i, c := range s {
-		b, err := c.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(b[1 : len(b)-1])
-		if i < slen-1 {
-			fmt.Fprint(&buf, ",")
-		}
-	}
-	fmt.Fprint(&buf, "}")
-
-	return buf.Bytes(), nil
-}
+type Selector Criteria
 
 // Select creates a selector based on the passed criteria.
 func Select(criteria ...Criterion) Selector {
-	return selector(criteria)
+	return criteria
 }
 
 // EOF
