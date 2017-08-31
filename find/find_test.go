@@ -44,16 +44,16 @@ func TestSimpleFind(t *testing.T) {
 	defer cleanup()
 
 	// Try to find some documents a simple way.
-	selector := find.SelectOr(func(os find.Selector) {
-		os.Append(find.SelectAnd(func(as find.Selector) {
-			as.LowerThan("age", 30)
-			as.Equal("active", false)
-		}))
-		os.Append(find.SelectAnd(func(as find.Selector) {
-			as.GreaterThan("age", 60)
-			as.Equal("active", true)
-		}))
-	})
+	selector := find.Select(find.Or(
+		find.And(
+			find.LowerThan("age", 30),
+			find.Equal("active", false),
+		),
+		find.And(
+			find.GreaterThan("age", 60),
+			find.Equal("active", "true"),
+		),
+	))
 	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"))
 	assert.Nil(frs.Error())
 	assert.True(frs.IsOK())
@@ -81,9 +81,7 @@ func TestLimitedFind(t *testing.T) {
 	defer cleanup()
 
 	// Limit found documents.
-	selector := find.SelectAnd(func(as find.Selector) {
-		as.Equal("active", true)
-	})
+	selector := find.Select(find.Equal("active", true))
 	frs := find.Find(cdb, selector, find.Fields("name", "active"), find.Limit(5))
 	assert.NotNil(frs)
 	assert.True(frs.IsOK())
@@ -103,12 +101,13 @@ func TestSortedFind(t *testing.T) {
 	defer cleanup()
 
 	// Sorting field has to be part of selector.
-	selector := find.SelectAnd(func(as find.Selector) {
-		as.GreaterThan("name", nil)
-		as.Equal("active", true)
-	})
+	selector := find.Select(
+		find.GreaterThan("name", nil),
+		find.Equal("active", true),
+	)
 	frs := find.Find(cdb, selector, find.Fields("name", "age"), find.Sort(find.Ascending("name")), find.Limit(1000))
 	assert.NotNil(frs)
+	assert.Equal(frs.Error(), nil)
 	assert.True(frs.IsOK())
 
 	name := ""
@@ -135,10 +134,10 @@ func TestFindExists(t *testing.T) {
 	defer cleanup()
 
 	// Try to find some documents having an existing "last_active".
-	selector := find.SelectAnd(func(as find.Selector) {
-		as.Exists("last_active")
-		as.LowerEqualThan("age", 25)
-	})
+	selector := find.Select(
+		find.Exists("last_active"),
+		find.LowerEqualThan("age", 25),
+	)
 	frs := find.Find(cdb, selector, find.Fields("name", "age", "active", "last_active"))
 	assert.NotNil(frs)
 	assert.True(frs.IsOK())
@@ -162,10 +161,10 @@ func TestFindExists(t *testing.T) {
 
 	// Now look for existing "last_active" but "active" is false. So
 	// no results.
-	selector = find.SelectAnd(func(as find.Selector) {
-		as.Exists("last_active")
-		as.NotEqual("active", true)
-	})
+	selector = find.Select(
+		find.Exists("last_active"),
+		find.NotEqual("active", true),
+	)
 	frs = find.Find(cdb, selector, find.Fields("name", "age", "active", "last_active"))
 	assert.NotNil(frs)
 	assert.True(frs.IsOK())
@@ -179,9 +178,7 @@ func TestSingleMatch(t *testing.T) {
 	defer cleanup()
 
 	// Try to find some documents having an existing "last_active".
-	selector := find.SelectAnd(func(as find.Selector) {
-		as.RegExp("name", ".*Adam.*")
-	})
+	selector := find.Select(find.RegExp("name", ".*Adam.*"))
 	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"))
 	assert.NotNil(frs)
 	assert.Nil(frs.Error())

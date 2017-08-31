@@ -58,14 +58,18 @@ type Negatable interface {
 // CRITERION
 //--------------------
 
+// Criterion defines one selector criterion. They are created by several extra
+// functions. Some of those expect a field name for their operation. In case of
+// MatchElement() and MatchAll() the fields of the sub-criteria have
 type Criterion interface {
-	// Negatable allows to negate this selector.
-	Negatable
+	// Not allows to negate this criterion.
+	Not() Criterion
 
 	// Marshaler allows to write this selector in its JSON encoding.
 	json.Marshaler
 }
 
+// criterion implements Criterion.
 type criterion struct {
 	not       bool
 	field     string
@@ -73,6 +77,7 @@ type criterion struct {
 	arguments []interface{}
 }
 
+// newValuesCriterion creates a createrion with N values as arguments.
 func newValuesCriterion(field, operator string, values ...interface{}) *criterion {
 	return &criterion{
 		field:     field,
@@ -81,6 +86,7 @@ func newValuesCriterion(field, operator string, values ...interface{}) *criterio
 	}
 }
 
+// newCriteriaCriterion creates a createrion with N criteria as arguments.
 func newCriteriaCriterion(field, operator string, criteria ...Criterion) *criterion {
 	arguments := make([]interface{}, len(criteria))
 	for i, c := range criteria {
@@ -89,9 +95,10 @@ func newCriteriaCriterion(field, operator string, criteria ...Criterion) *criter
 	return newValuesCriterion(field, operator, arguments...)
 }
 
-// Not implements Negatable.
-func (c *criterion) Not() {
+// Not implements Criterion.
+func (c *criterion) Not() Criterion {
 	c.not = true
+	return c
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -145,250 +152,130 @@ func (c *criterion) MarshalJSON() ([]byte, error) {
 	return sbuf.Bytes(), nil
 }
 
+// And creates a criterion where all sub-criteria have to be true.
 func And(criteria ...Criterion) Criterion {
 	return newCriteriaCriterion("", "$and", criteria...)
+}
+
+// Or creates a criterion where any sub-criteria have to be true.
+func Or(criteria ...Criterion) Criterion {
+	return newCriteriaCriterion("", "$or", criteria...)
+}
+
+// None creates a criterion where none of the sub-criteria may be true.
+func None(criteria ...Criterion) Criterion {
+	return newCriteriaCriterion("", "$nor", criteria...)
+}
+
+// Exists checks if the field exists.
+func Exists(field string) Criterion {
+	return newValuesCriterion(field, "$exists", true)
+}
+
+// Type checks the type of the field.
+func Type(field string, fieldType FieldType) Criterion {
+	return newValuesCriterion(field, "$type", fieldType)
+}
+
+// Equal checks if the field is equal to the value.
+func Equal(field string, value interface{}) Criterion {
+	return newValuesCriterion(field, "$eq", value)
+}
+
+// Equal checks if the field is not equal to the value.
+func NotEqual(field string, value interface{}) Criterion {
+	return newValuesCriterion(field, "$ne", value)
+}
+
+// Size checks the length of the array addressed with field.
+func Size(field string, size int) Criterion {
+	return newValuesCriterion(field, "$size", size)
+}
+
+// In checks if the field contains one of the values.
+func In(field string, values ...interface{}) Criterion {
+	return newValuesCriterion(field, "$in", values...)
+}
+
+// NotIn checks if the field contains none of the values.
+func NotIn(field string, values ...interface{}) Criterion {
+	return newValuesCriterion(field, "$nin", values...)
+}
+
+// All checks if the field contains all of the values.
+func All(field string, values ...interface{}) Criterion {
+	return newValuesCriterion(field, "$all", values...)
+}
+
+// GreaterThan checks if the field is greater than the value.
+func GreaterThan(field string, value interface{}) Criterion {
+	return newValuesCriterion(field, "$gt", value)
+}
+
+// GreaterEqualThan checks if the field is greater or equal than the value.
+func GreaterEqualThan(field string, value interface{}) Criterion {
+	return newValuesCriterion(field, "$gte", value)
+}
+
+// LowerThan checks if the field is lower than the value.
+func LowerThan(field string, value interface{}) Criterion {
+	return newValuesCriterion(field, "$lt", value)
+}
+
+// LowerEqualThan checks if the field is loweer or equal than the value.
+func LowerEqualThan(field string, value interface{}) Criterion {
+	return newValuesCriterion(field, "$lte", value)
+}
+
+// Modulo checks the remainder of the field devided by divisor.
+func Modulo(field string, divisor, remainder int) Criterion {
+	return newValuesCriterion(field, "$mod", divisor, remainder)
+}
+
+// RegExp checks if the field matches the given pattern.
+func RegExp(field, pattern string) Criterion {
+	return newValuesCriterion(field, "$regex", pattern)
 }
 
 //--------------------
 // SELECTOR
 //--------------------
 
-// Selector contains one or more conditions to find documents.
-type Selector interface {
-	// Equal checks if the field is equal to the argument.
-	Equal(field string, argument interface{}) Negatable
-
-	// NotEqual checks if the field is not equal to the argument.
-	NotEqual(field string, argument interface{}) Negatable
-
-	// In checks if the field is in the arguments.
-	In(field string, arguments ...interface{}) Negatable
-
-	// NotIn checks if the field is not in the arguments.
-	NotIn(field string, arguments ...interface{}) Negatable
-
-	// Size checks the length of the array addressed with field.
-	Size(field string, size int) Negatable
-
-	// All checks if the field is an array and contains all the arguments.
-	All(field string, arguments ...interface{}) Negatable
-
-	// GreaterThan checks if the field is greater than the argument.
-	GreaterThan(field string, argument interface{}) Negatable
-
-	// GreaterEqualThan checks if the field is greater or equal than the argument.
-	GreaterEqualThan(field string, argument interface{}) Negatable
-
-	// LowerThan checks if the field is greater than the argument.
-	LowerThan(field string, argument interface{}) Negatable
-
-	// LowerEqualThan checks if the field is greater or equal than the argument.
-	LowerEqualThan(field string, argument interface{}) Negatable
-
-	// Exists checks if the field exists.
-	Exists(field string) Negatable
-
-	// Type checks the type of the field.
-	Type(field string, argument FieldType) Negatable
-
-	// Modulo checks the remainder of the field devided by divisor.
-	Modulo(field string, divisor, remainder int) Negatable
-
-	// RegExp checks if the field matches the given pattern.
-	RegExp(field, pattern string) Negatable
-
-	// Append adds an other selector to this one.
-	Append(subselector Selector)
-
-	// Negatable allows to negate this selector.
-	Negatable
-
-	// Marshaler allows to write this selector in its JSON encoding.
-	json.Marshaler
-}
+// Selector contains one or more criteria to find documents.
+type Selector json.Marshaler
 
 // selector implements Selector.
-type selector struct {
-	not       bool
-	field     string
-	operator  string
-	arguments []interface{}
-}
-
-// SelectAnd creates a combination selector where all selectors
-// have to be true.
-func SelectAnd(conditioner func(s Selector)) Selector {
-	return newSelector("$and", conditioner)
-}
-
-// SelectOr creates a combination selector where any selectors
-// have to be true.
-func SelectOr(conditioner func(s Selector)) Selector {
-	return newSelector("$or", conditioner)
-}
-
-// SelectNone creates a combination selector where none of the
-// selectors has to be true.
-func SelectNone(conditioner func(s Selector)) Selector {
-	return newSelector("$nor", conditioner)
-}
-
-// Equal implements Selector.
-func (s *selector) Equal(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$eq", argument)
-}
-
-// NotEqual implements Selector.
-func (s *selector) NotEqual(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$ne", argument)
-}
-
-// In implements Selector.
-func (s *selector) In(field string, arguments ...interface{}) Negatable {
-	return s.appendSubselector(field, "$in", arguments...)
-}
-
-// NotIn implements Selector.
-func (s *selector) NotIn(field string, arguments ...interface{}) Negatable {
-	return s.appendSubselector(field, "$nin", arguments...)
-}
-
-// Size implements Selector.
-func (s *selector) Size(field string, size int) Negatable {
-	return s.appendSubselector(field, "$size", size)
-}
-
-// All implements Selector.
-func (s *selector) All(field string, arguments ...interface{}) Negatable {
-	return s.appendSubselector(field, "$all", arguments...)
-}
-
-// GreaterThan implements Selector.
-func (s *selector) GreaterThan(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$gt", argument)
-}
-
-// GreaterEqualThan implements Selector.
-func (s *selector) GreaterEqualThan(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$gte", argument)
-}
-
-// LowerThan implements Selector.
-func (s *selector) LowerThan(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$lt", argument)
-}
-
-// LowerEqualThan implements Selector.
-func (s *selector) LowerEqualThan(field string, argument interface{}) Negatable {
-	return s.appendSubselector(field, "$lte", argument)
-}
-
-// Exists implements Selector.
-func (s *selector) Exists(field string) Negatable {
-	return s.appendSubselector(field, "$exists", true)
-}
-
-// Type implements Selector.
-func (s *selector) Type(field string, argument FieldType) Negatable {
-	return s.appendSubselector(field, "$type", argument)
-}
-
-// Modulo implements Selector.
-func (s *selector) Modulo(field string, divisor, remainder int) Negatable {
-	return s.appendSubselector(field, "$mod", divisor, remainder)
-}
-
-// RegExp implements Selector.
-func (s *selector) RegExp(field, pattern string) Negatable {
-	return s.appendSubselector(field, "$regex", pattern)
-}
-
-// Append implements Selector.
-func (s *selector) Append(subselector Selector) {
-	s.arguments = append(s.arguments, subselector)
-}
-
-// Not implements Negatable.
-func (s *selector) Not() {
-	s.not = true
-}
+type selector []Criterion
 
 // MarshalJSON implements json.Marshaler.
-func (s *selector) MarshalJSON() ([]byte, error) {
-	var sbuf bytes.Buffer
-	var jargs [][]byte
-	var jargslen int
+func (s selector) MarshalJSON() ([]byte, error) {
+	// Special case: Only one criterion.
+	if len(s) == 1 {
+		return s[0].MarshalJSON()
+	}
+	// Regular case.
+	var buf bytes.Buffer
+	var slen = len(s)
 
-	// Praparations first.
-	for _, argument := range s.arguments {
-		jarg, err := json.Marshal(argument)
+	fmt.Fprint(&buf, "{")
+	for i, c := range s {
+		b, err := c.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
-		jargs = append(jargs, jarg)
-	}
-	jargslen = len(jargs)
-
-	// Is negated?
-	if s.not {
-		fmt.Fprint(&sbuf, "{\"$not\":")
-	}
-	// Prepend with field if needed.
-	if s.field != "" {
-		fmt.Fprintf(&sbuf, "{%q:", s.field)
-	}
-	// Now operator and argument(s).
-	fmt.Fprintf(&sbuf, "{%q:", s.operator)
-	if arrayOperators[s.operator] {
-		fmt.Fprint(&sbuf, "[")
-	}
-	for i, jarg := range jargs {
-		fmt.Fprintf(&sbuf, "%s", jarg)
-		if i < jargslen-1 {
-			fmt.Fprint(&sbuf, ",")
+		buf.Write(b[1 : len(b)-1])
+		if i < slen-1 {
+			fmt.Fprint(&buf, ",")
 		}
 	}
-	if arrayOperators[s.operator] {
-		fmt.Fprint(&sbuf, "]")
-	}
-	fmt.Fprint(&sbuf, "}")
-	// Append closing brace if field has been prepended.
-	if s.field != "" {
-		fmt.Fprint(&sbuf, "}")
-	}
-	// Append closing brace if selector is negated.
-	if s.not {
-		fmt.Fprint(&sbuf, "}")
-	}
+	fmt.Fprint(&buf, "}")
 
-	return sbuf.Bytes(), nil
+	return buf.Bytes(), nil
 }
 
-// appendSubselector creates and appends a subselector based on field,
-// operator, and arguments.
-func (s *selector) appendSubselector(field, operator string, arguments ...interface{}) Negatable {
-	subselector := &selector{
-		field:     field,
-		operator:  operator,
-		arguments: arguments,
-	}
-	s.Append(subselector)
-	return subselector
-}
-
-//--------------------
-// HELPERS
-//--------------------
-
-// newSelector helps to create new selectors.
-func newSelector(operator string, conditioner func(Selector)) Selector {
-	s := &selector{
-		operator: operator,
-	}
-	if conditioner != nil {
-		conditioner(s)
-	}
-	return s
+// Select creates a selector based on the passed criteria.
+func Select(criteria ...Criterion) Selector {
+	return selector(criteria)
 }
 
 // EOF
