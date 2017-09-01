@@ -32,8 +32,14 @@ import (
 func TestCriteria(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
+	// One single criterion.
+	criterion := find.Equal("foo", 12345)
+	b, err := json.Marshal(criterion)
+	assert.Nil(err)
+	assert.Equal(string(b), `{"foo":{"$eq":12345}}`)
+
 	// Nested criteria.
-	criterion := find.And(
+	criterion = find.And(
 		find.Equal("foo", 4711),
 		find.In("year", 1965, 1989, 2017),
 		find.Or(
@@ -42,7 +48,7 @@ func TestCriteria(t *testing.T) {
 		),
 		find.GreaterThan("count", 4711).Not(),
 	)
-	b, err := json.Marshal(criterion)
+	b, err = json.Marshal(criterion)
 	assert.Nil(err)
 	assert.Equal(string(b), `{"$and":[{"foo":{"$eq":4711}},{"year":{"$in":[1965,1989,2017]}},`+
 		`{"$or":[{"genre":{"$all":["comedy","short"]}},{"age":{"$ne":18}}]},{"$not":{"count":{"$gt":4711}}}]}`)
@@ -58,7 +64,22 @@ func TestCriteria(t *testing.T) {
 func TestSelector(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 
-	assert.True(true)
+	// One single criterion.
+	selector := find.Select(
+		find.Equal("foo", 12345),
+	)
+	b, err := json.Marshal(selector)
+	assert.Nil(err)
+	assert.Equal(string(b), `{"foo":{"$eq":12345}}`)
+
+	// Two single criteria.
+	selector = find.Select(
+		find.Equal("foo", 12345),
+		find.GreaterThan("bar", 1),
+	)
+	b, err = json.Marshal(selector)
+	assert.Nil(err)
+	assert.Equal(string(b), `{"foo":{"$eq":12345},"bar":{"$gt":1}}`)
 }
 
 // EOF
