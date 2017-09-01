@@ -44,14 +44,24 @@ var arrayOperators = map[string]bool{
 	"$nin": true,
 }
 
+// Operators expecting direct fields.
+var fieldOperators = map[string]bool{
+	"$elemMatch": true,
+	"$allMatch":  true,
+}
+
 //--------------------
-// NEGATABLE
+// ENVELOPE
 //--------------------
 
-// Negatable allows to negate a selector.
-type Negatable interface {
-	// Not negates a selector.
-	Not()
+// envelope makes any type implementing json.Marshaler.
+type envelope struct {
+	value interface{}
+}
+
+// MarshalJSON implements json.Marshaler.
+func (e envelope) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.value)
 }
 
 //--------------------
@@ -69,63 +79,30 @@ type Criterion interface {
 	json.Marshaler
 }
 
-// Criteria defines a number of selector criteria.
-type Criteria json.Marshaler
-
-// criteria implements Criteria.
-type criteria []Criterion
-
-// MarshalJSON implements json.Marshaler.
-func (cs criteria) MarshalJSON() ([]byte, error) {
-	// Special case: Only one criterion.
-	if len(cs) == 1 {
-		return cs[0].MarshalJSON()
-	}
-	// Regular case.
-	var buf bytes.Buffer
-	var cslen = len(cs)
-
-	fmt.Fprint(&buf, "{")
-	for i, c := range cs {
-		b, err := c.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(b[1 : len(b)-1])
-		if i < cslen-1 {
-			fmt.Fprint(&buf, ",")
-		}
-	}
-	fmt.Fprint(&buf, "}")
-
-	return buf.Bytes(), nil
-}
-
 // criterion implements Criterion.
 type criterion struct {
-	not      bool
-	field    string
-	operator string
-	criteria Criteria
-	values   []interface{}
+	not       bool
+	field     string
+	operator  string
+	arguments []json.Marshaler
 }
 
-// newValuesCriterion creates a createrion with N values as arguments.
-func newValuesCriterion(field, operator string, values ...interface{}) *criterion {
-	return &criterion{
-		field:    field,
-		operator: operator,
-		values:   values,
+// newCriterion creates a createrion with a number of arguments.
+func newCriterion(field, operator string, arguments ...interface{}) *criterion {
+	c := &criterion{
+		field:     field,
+		operator:  operator,
+		arguments: make([]json.Marshaler, len(arguments)),
 	}
-}
-
-// newCriteriaCriterion creates a createrion with N criteria as arguments.
-func newCriteriaCriterion(field, operator string, criteria ...Criterion) *criterion {
-	return &criterion{
-		field:    field,
-		operator: operator,
-		criteria: Criteria(criteria),
+	for i, argument := range arguments {
+		jm, ok := argument.(json.Marshaler)
+		if ok {
+			c.arguments[i] = jm
+			continue
+		}
+		c.arguments[i] = envelope{argument}
 	}
+	return c
 }
 
 // Not implements Criterion.
@@ -136,153 +113,153 @@ func (c *criterion) Not() Criterion {
 
 // MarshalJSON implements json.Marshaler.
 func (c *criterion) MarshalJSON() ([]byte, error) {
-	var sbuf bytes.Buffer
-	var jvalues [][]byte
-	var jvalueslen int
-
-	// Preparations first.
-	for _, value := range c.values {
-		jvalue, err := json.Marshal(value)
-		if err != nil {
-			return nil, err
-		}
-		jvalues = append(jvalues, jvalue)
-	}
-	jvalueslen = len(jvalues)
+	var buf bytes.Buffer
+	var alen = len(c.arguments)
 
 	// Is negated?
 	if c.not {
-		fmt.Fprint(&sbuf, "{\"$not\":")
+		fmt.Fprint(&buf, "{\"$not\":")
 	}
 	// Prepend with field if needed.
 	if c.field != "" {
-		fmt.Fprintf(&sbuf, "{%q:", c.field)
+		fmt.Fprintf(&buf, "{%q:", c.field)
 	}
-	// Now operator and values(s).
-	fmt.Fprintf(&sbuf, "{%q:", c.operator)
-	// Decide between criteria and values.
-	if c.criteria != nil {
-		// Criteria.
-		b, err := c.criteria.MarshalJSON()
+	// Now operator and arguments(s).
+	fmt.Fprintf(&buf, "{%q:", c.operator)
+	switch {
+	case arrayOperators[c.operator]:
+		fmt.Fprint(&buf, "[")
+	case fieldOperators[c.operator]:
+		fmt.Fprint(&buf, "{")
+	}
+	for i, argument := range c.arguments {
+		b, err := argument.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
-		sbuf.Write(b)
-	} else {
-		// Value(s).
-		vlen := len(c.values)
-		if arrayOperators[c.operator] {
-			fmt.Fprint(&sbuf, "[")
+		if fieldOperators[c.operator] {
+			buf.Write(b[1 : len(b)-1])
+		} else {
+			buf.Write(b)
 		}
-		for i, value := range c.values {
-			b, err := json.Marshal(value)
-			if err != nil {
-				return nil, err
-			}
-			if i < vlen-1 {
-				fmt.Fprint(&sbuf, ",")
-			}
-		}
-		if arrayOperators[c.operator] {
-			fmt.Fprint(&sbuf, "]")
+		if i < alen-1 {
+			fmt.Fprint(&buf, ",")
 		}
 	}
-	fmt.Fprint(&sbuf, "}")
+	switch {
+	case arrayOperators[c.operator]:
+		fmt.Fprint(&buf, "]")
+	case fieldOperators[c.operator]:
+		fmt.Fprint(&buf, "}")
+	}
+	fmt.Fprint(&buf, "}")
 	// Append closing brace if field has been prepended.
 	if c.field != "" {
-		fmt.Fprint(&sbuf, "}")
+		fmt.Fprint(&buf, "}")
 	}
 	// Append closing brace if selector is negated.
 	if c.not {
-		fmt.Fprint(&sbuf, "}")
+		fmt.Fprint(&buf, "}")
 	}
 
-	return sbuf.Bytes(), nil
+	return buf.Bytes(), nil
 }
 
 // And creates a criterion where all sub-criteria have to be true.
 func And(criteria ...Criterion) Criterion {
-	return newCriteriaCriterion("", "$and", criteria...)
+	return newCriterion("", "$and", criteriaToArguments(criteria...)...)
 }
 
 // Or creates a criterion where any sub-criteria have to be true.
 func Or(criteria ...Criterion) Criterion {
-	return newCriteriaCriterion("", "$or", criteria...)
+	return newCriterion("", "$or", criteriaToArguments(criteria...)...)
 }
 
 // None creates a criterion where none of the sub-criteria may be true.
 func None(criteria ...Criterion) Criterion {
-	return newCriteriaCriterion("", "$nor", criteria...)
+	return newCriterion("", "$nor", criteriaToArguments(criteria...)...)
+}
+
+// MatchElement creates a criterion matching all documents with at least
+// one array field element matching the supplied query criteria.
+func MatchElement(field string, criteria ...Criterion) {
+	return newCriterion(field, "$elemMatch", criteriaToArguments(criteria...)...)
+}
+
+// MatchAll creates a criterion matching all documents with all array field
+// elements matching the supplied query criteria.
+func MatchAll(field string, criteria ...Criterion) {
+	return newCriterion(field, "$allMatch", criteriaToArguments(criteria...)...)
 }
 
 // Exists checks if the field exists.
 func Exists(field string) Criterion {
-	return newValuesCriterion(field, "$exists", true)
+	return newCriterion(field, "$exists", true)
 }
 
 // Type checks the type of the field.
 func Type(field string, fieldType FieldType) Criterion {
-	return newValuesCriterion(field, "$type", fieldType)
+	return newCriterion(field, "$type", fieldType)
 }
 
 // Equal checks if the field is equal to the value.
 func Equal(field string, value interface{}) Criterion {
-	return newValuesCriterion(field, "$eq", value)
+	return newCriterion(field, "$eq", value)
 }
 
 // Equal checks if the field is not equal to the value.
 func NotEqual(field string, value interface{}) Criterion {
-	return newValuesCriterion(field, "$ne", value)
+	return newCriterion(field, "$ne", value)
 }
 
 // Size checks the length of the array addressed with field.
 func Size(field string, size int) Criterion {
-	return newValuesCriterion(field, "$size", size)
+	return newCriterion(field, "$size", size)
 }
 
 // In checks if the field contains one of the values.
 func In(field string, values ...interface{}) Criterion {
-	return newValuesCriterion(field, "$in", values...)
+	return newCriterion(field, "$in", values...)
 }
 
 // NotIn checks if the field contains none of the values.
 func NotIn(field string, values ...interface{}) Criterion {
-	return newValuesCriterion(field, "$nin", values...)
+	return newCriterion(field, "$nin", values...)
 }
 
 // All checks if the field contains all of the values.
 func All(field string, values ...interface{}) Criterion {
-	return newValuesCriterion(field, "$all", values...)
+	return newCriterion(field, "$all", values...)
 }
 
 // GreaterThan checks if the field is greater than the value.
 func GreaterThan(field string, value interface{}) Criterion {
-	return newValuesCriterion(field, "$gt", value)
+	return newCriterion(field, "$gt", value)
 }
 
 // GreaterEqualThan checks if the field is greater or equal than the value.
 func GreaterEqualThan(field string, value interface{}) Criterion {
-	return newValuesCriterion(field, "$gte", value)
+	return newCriterion(field, "$gte", value)
 }
 
 // LowerThan checks if the field is lower than the value.
 func LowerThan(field string, value interface{}) Criterion {
-	return newValuesCriterion(field, "$lt", value)
+	return newCriterion(field, "$lt", value)
 }
 
 // LowerEqualThan checks if the field is loweer or equal than the value.
 func LowerEqualThan(field string, value interface{}) Criterion {
-	return newValuesCriterion(field, "$lte", value)
+	return newCriterion(field, "$lte", value)
 }
 
 // Modulo checks the remainder of the field devided by divisor.
 func Modulo(field string, divisor, remainder int) Criterion {
-	return newValuesCriterion(field, "$mod", divisor, remainder)
+	return newCriterion(field, "$mod", divisor, remainder)
 }
 
 // RegExp checks if the field matches the given pattern.
 func RegExp(field, pattern string) Criterion {
-	return newValuesCriterion(field, "$regex", pattern)
+	return newCriterion(field, "$regex", pattern)
 }
 
 //--------------------
@@ -290,11 +267,56 @@ func RegExp(field, pattern string) Criterion {
 //--------------------
 
 // Selector contains one or more criteria to find documents.
-type Selector Criteria
+type Selector json.Marshaler
+
+// selector implements Selector.
+type selector struct {
+	criteria []Criterion
+}
 
 // Select creates a selector based on the passed criteria.
 func Select(criteria ...Criterion) Selector {
-	return criteria
+	return &selector{criteria}
+}
+
+// MarshalJSON implements json.Marshaler.
+func (s *selector) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	var slen = len(s.criteria)
+
+	// Special case, only one criterion.
+	if slen == 1 {
+		return s.criteria[0].MarshalJSON()
+	}
+	// Regular case, multiple criteria.
+	fmt.Fprint(&buf, "{")
+	for i, criterion := range s.criteria {
+		b, err := criterion.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(b[1 : len(b)-1])
+		if i < slen-1 {
+			fmt.Fprint(&buf, ",")
+		}
+	}
+	fmt.Fprint(&buf, "}")
+
+	return buf.Bytes(), nil
+}
+
+//--------------------
+// HELPER
+//--------------------
+
+// criteriaToArguments converts a slice of Criterion to
+// a slice of empty interfaces.
+func criteriaToArguments(criteria ...Criterion) []interface{} {
+	arguments := make([]interface{}, len(criteria))
+	for i, criterion := range criteria {
+		arguments[i] = criterion
+	}
+	return arguments
 }
 
 // EOF
