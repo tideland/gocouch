@@ -182,13 +182,13 @@ func None(criteria ...Criterion) Criterion {
 
 // MatchElement creates a criterion matching all documents with at least
 // one array field element matching the supplied query criteria.
-func MatchElement(field string, criteria ...Criterion) {
+func MatchElement(field string, criteria ...Criterion) Criterion {
 	return newCriterion(field, "$elemMatch", criteriaToArguments(criteria...)...)
 }
 
 // MatchAll creates a criterion matching all documents with all array field
 // elements matching the supplied query criteria.
-func MatchAll(field string, criteria ...Criterion) {
+func MatchAll(field string, criteria ...Criterion) Criterion {
 	return newCriterion(field, "$allMatch", criteriaToArguments(criteria...)...)
 }
 

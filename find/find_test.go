@@ -171,10 +171,10 @@ func TestFindExists(t *testing.T) {
 	assert.Equal(frs.Len(), 0)
 }
 
-// TestSingleMatch tests using only one selector, here a regular expression.
-func TestSingleMatch(t *testing.T) {
+// TestOneCriterion tests using only one criterion, here a regular expression.
+func TestOneCriterion(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
-	cdb, cleanup := prepareFilledDatabase("find-match", 1000, assert)
+	cdb, cleanup := prepareFilledDatabase("find-one-criterion", 1000, assert)
 	defer cleanup()
 
 	// Try to find some documents having an existing "last_active".
@@ -199,6 +199,15 @@ func TestSingleMatch(t *testing.T) {
 	assert.Nil(err)
 }
 
+// TestMatches tests using element and all match operators.
+func TestMatch(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+	cdb, cleanup := prepareFilledDatabase("find-match", 1000, assert)
+	defer cleanup()
+
+	assert.NotNil(cdb)
+}
+
 //--------------------
 // HELPERS
 //--------------------
@@ -216,6 +225,7 @@ type Person struct {
 
 	Name       string `json:"name"`
 	Age        int    `json:"age"`
+	Shifts     []int  `json:"shifts"`
 	Active     bool   `json:"active"`
 	LastActive int64  `json:"last_active,omitempty"`
 	Notes      []Note `json:"notes"`
@@ -247,6 +257,7 @@ func prepareFilledDatabase(database string, count int, assert audit.Assertion) (
 				DocumentID: identifier.Identifier(last, first, outer, inner),
 				Name:       first + " " + middle + " " + last,
 				Age:        gen.Int(18, 65),
+				Shifts:     []int{gen.Int(1, 3), gen.Int(1, 3), gen.Int(1, 3)},
 				Active:     gen.FlipCoin(75),
 			}
 			if person.Active {
