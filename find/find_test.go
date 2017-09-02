@@ -181,7 +181,6 @@ func TestOneCriterion(t *testing.T) {
 	selector := find.Select(find.RegExp("name", ".*Adam.*"))
 	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"))
 	assert.NotNil(frs)
-	assert.Nil(frs.Error())
 	assert.True(frs.IsOK())
 
 	err := frs.Do(func(document couchdb.Unmarshable) error {
@@ -200,12 +199,57 @@ func TestOneCriterion(t *testing.T) {
 }
 
 // TestMatches tests using element and all match operators.
-func TestMatch(t *testing.T) {
+func TestMatches(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
 	cdb, cleanup := prepareFilledDatabase("find-match", 1000, assert)
 	defer cleanup()
 
-	assert.NotNil(cdb)
+	// Find with at least one matching element.
+	selector := find.Select(find.MatchElement("shifts", find.Equal("", 3)))
+	frs := find.Find(cdb, selector, find.Fields("name", "shifts"))
+	assert.NotNil(frs)
+	assert.True(frs.IsOK())
+
+	err := frs.Do(func(document couchdb.Unmarshable) error {
+		fields := struct {
+			Name   string `json:"name"`
+			Shifts []int  `json:"shifts"`
+		}{}
+		if err := document.Unmarshal(&fields); err != nil {
+			return err
+		}
+		assert.Logf("NAME %v SHIFTS %v", fields.Name, fields.Shifts)
+		assert.Contents(3, fields.Shifts)
+		return nil
+	})
+	assert.Nil(err)
+
+	// Find with all matching elements (dumb query,
+	// but checking combination).
+	selector = find.Select(
+		find.MatchAll("shifts",
+			find.GreaterThan("", 1),
+			find.LowerThan("", 3),
+		),
+	)
+	frs = find.Find(cdb, selector, find.Fields("name", "shifts"))
+	assert.NotNil(frs)
+	assert.Nil(frs.Error())
+	assert.True(frs.IsOK())
+
+	err = frs.Do(func(document couchdb.Unmarshable) error {
+		fields := struct {
+			Name   string `json:"name"`
+			Shifts []int  `json:"shifts"`
+		}{}
+		if err := document.Unmarshal(&fields); err != nil {
+			return err
+		}
+		assert.Logf("NAME %v SHIFTS %v", fields.Name, fields.Shifts)
+		assert.Equal(fields.Shifts, []int{2, 2, 2})
+		return nil
+	})
+	assert.Nil(err)
 }
 
 //--------------------
