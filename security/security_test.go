@@ -27,7 +27,7 @@ import (
 //--------------------
 
 const (
-	TemplateDBcfg = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-<<DATABASE>>}}"
+	Cfg = "{etc {hostname localhost}{port 5984}{database tgocouch-testing-<<DATABASE>>}{debug-logging true}}"
 )
 
 //--------------------
@@ -40,49 +40,49 @@ func TestAdministrator(t *testing.T) {
 	cdb := prepareDatabase("administrator", assert)
 
 	// Check first admin before it exists.
-	ok, err := security.HasAdministrator(cdb, "admin1")
+	ok, err := security.HasAdministrator(cdb, "nonode@nohost", "admin1")
 	assert.Nil(err)
 	assert.False(ok)
 
-	err = security.WriteAdministrator(cdb, "admin1", "admin1")
+	err = security.WriteAdministrator(cdb, "nonode@nohost", "admin1", "admin1")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
 		session, err := security.NewSession(cdb, "admin1", "admin1")
 		assert.Nil(err)
-		err = security.DeleteAdministrator(cdb, "admin1", session.Cookie())
+		err = security.DeleteAdministrator(cdb, "nonode@nohost", "admin1", session.Cookie())
 		assert.Nil(err)
 	}()
 
 	// Check first admin after creation without session.
-	ok, err = security.HasAdministrator(cdb, "admin1")
+	ok, err = security.HasAdministrator(cdb, "nonode@nohost", "admin1")
 	assert.ErrorMatch(err, ".*status code 401.*")
 	assert.False(ok)
 
 	// Check first admin after creation with session.
 	session, err := security.NewSession(cdb, "admin1", "admin1")
 	assert.Nil(err)
-	ok, err = security.HasAdministrator(cdb, "admin1", session.Cookie())
+	ok, err = security.HasAdministrator(cdb, "nonode@nohost", "admin1", session.Cookie())
 	assert.Nil(err)
 	assert.True(ok)
 
 	// Now care for second administrator, first withour session,
 	// then with.
-	err = security.WriteAdministrator(cdb, "admin2", "admin2")
+	err = security.WriteAdministrator(cdb, "nonode@nohost", "admin2", "admin2")
 	assert.ErrorMatch(err, ".*status code 401.*")
 
-	err = security.WriteAdministrator(cdb, "admin2", "admin2", session.Cookie())
+	err = security.WriteAdministrator(cdb, "nonode@nohost", "admin2", "admin2", session.Cookie())
 	assert.Nil(err)
 
-	ok, err = security.HasAdministrator(cdb, "admin2", session.Cookie())
+	ok, err = security.HasAdministrator(cdb, "nonode@nohost", "admin2", session.Cookie())
 	assert.Nil(err)
 	assert.True(ok)
 
 	auth := security.BasicAuthentication("admin1", "admin1")
-	err = security.DeleteAdministrator(cdb, "admin2", auth)
+	err = security.DeleteAdministrator(cdb, "nonode@nohost", "admin2", auth)
 	assert.Nil(err)
 
-	ok, err = security.HasAdministrator(cdb, "admin2", auth)
+	ok, err = security.HasAdministrator(cdb, "nonode@nohost", "admin2", auth)
 	assert.Nil(err)
 	assert.False(ok)
 }
@@ -127,13 +127,13 @@ func TestSecurity(t *testing.T) {
 	assert.ErrorMatch(err, ".*status code 404.*")
 
 	// Without database but with authentication.
-	err = security.WriteAdministrator(cdb, "admin", "admin")
+	err = security.WriteAdministrator(cdb, "nonode@nohost", "admin", "admin")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
 		session, err := security.NewSession(cdb, "admin", "admin")
 		assert.Nil(err)
-		err = security.DeleteAdministrator(cdb, "admin", session.Cookie())
+		err = security.DeleteAdministrator(cdb, "nonode@nohost", "admin", session.Cookie())
 		assert.Nil(err)
 	}()
 	session, err := security.NewSession(cdb, "admin", "admin")
@@ -151,7 +151,7 @@ func TestSecurity(t *testing.T) {
 		assert.True(rs.IsOK())
 	}()
 	err = security.WriteSecurity(cdb, in)
-	assert.ErrorMatch(err, ".*status code 401.*")
+	assert.ErrorMatch(err, ".*status code 500.*")
 
 	// With database and authentication.
 	err = security.WriteSecurity(cdb, in, session.Cookie())
@@ -170,13 +170,13 @@ func TestScenario(t *testing.T) {
 	cdb := prepareDatabase("scenario", assert)
 
 	// Create administrator.
-	err := security.WriteAdministrator(cdb, "admin", "admin")
+	err := security.WriteAdministrator(cdb, "nonode@nohost", "admin", "admin")
 	assert.Nil(err)
 	session, err := security.NewSession(cdb, "admin", "admin")
 	assert.Nil(err)
 	defer func() {
 		// Let the administator remove himself.
-		err = security.DeleteAdministrator(cdb, "admin", session.Cookie())
+		err = security.DeleteAdministrator(cdb, "nonode@nohost", "admin", session.Cookie())
 		assert.Nil(err)
 	}()
 
@@ -254,11 +254,12 @@ type MyDocument struct {
 // prepareDatabase opens the database and deletes a
 // possible test database.
 func prepareDatabase(database string, assert audit.Assertion) couchdb.CouchDB {
-	cfgstr := strings.Replace(TemplateDBcfg, "<<DATABASE>>", database, 1)
+	cfgstr := strings.Replace(Cfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
 	assert.Nil(err)
 	cdb, err := couchdb.Open(cfg)
 	assert.Nil(err)
+
 	cdb.DeleteDatabase()
 	return cdb
 }

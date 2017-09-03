@@ -429,6 +429,7 @@ func prepareDatabase(database string, assert audit.Assertion) (couchdb.CouchDB, 
 	assert.Nil(err)
 	rs := cdb.DeleteDatabase()
 	rs = cdb.CreateDatabase()
+	assert.Nil(rs.Error())
 	assert.True(rs.IsOK())
 	return cdb, func() { cdb.DeleteDatabase() }
 }
