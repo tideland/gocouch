@@ -15,31 +15,41 @@ I hope you like it. ;)
 
 ## Version
 
-Version 1.0.0-beta.2017-07-25
+Version 1.0.0-beta.2017-09-03
 
 ## Packages
 
 #### CouchDB
 
-Package providing the client for the CouchDB.
+Package `couchdb` is the client for the access of the CouchDB. It provides the
+standard functionality to create databases as well as read, write, and delete
+documents.
 
 #### Views
 
-Views allows to call CouchDB views and retrieve their results.
+Package `views` allows to request CouchDB views. Right now these have to be
+created using the design documents in package `couchdb`. Future releases will
+be able to create, modify, and delete them direct from this package too.
+
+#### Find
+
+Package `find` helps to create *Mango* queries the Go way. Typically they have
+a very special JSON notation. Searches will then be executed using the `Find()`
+function. Addtional parameters help to restrict the result set to individual
+fields, to filter the result, or to paginate it.
 
 #### Changes
 
-Changes provides access to changes made documents in a database in time order
-of application.
+Package `changes` allow to retrieve the changes made in a datebase in time order.
 
 #### Security
 
-Management of CouchDB administrators and users for the security of databases. Users
-are authenticated by different request parameters.
+Package `security` helps with user administration and authentication for CouchDB.
 
 #### Startup
 
-Mechanism for a clean database startup and initialisation including database versioning.
+Package `startup` provides a simple mechanism for a clean startup and maintenance
+of CouchDB databases including database versioning.
 
 ## Contributors
 
