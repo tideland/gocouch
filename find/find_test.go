@@ -15,7 +15,6 @@ import (
 	"github.com/tideland/golib/audit"
 	"github.com/tideland/golib/etc"
 	"github.com/tideland/golib/identifier"
-	"github.com/tideland/golib/logger"
 
 	"github.com/tideland/gocouch/couchdb"
 	"github.com/tideland/gocouch/find"
@@ -68,7 +67,6 @@ func TestSimpleFind(t *testing.T) {
 			return err
 		}
 		assert.True((fields.Age < 30 && !fields.Active) || (fields.Age > 60 && fields.Active))
-		assert.Logf("person with name %s has age %d and activity status is %v", fields.Name, fields.Age, fields.Active)
 		return nil
 	})
 	assert.Nil(err)
@@ -119,7 +117,6 @@ func TestSortedFind(t *testing.T) {
 		if err := document.Unmarshal(&fields); err != nil {
 			return err
 		}
-		assert.Logf("person with name %s has age %d", fields.Name, fields.Age)
 		assert.True(fields.Name >= name)
 		name = fields.Name
 		return nil
@@ -153,8 +150,6 @@ func TestFindExists(t *testing.T) {
 			return err
 		}
 		assert.True(fields.Age <= 25 && fields.LastActive > 0 && fields.Active)
-		lastActive := time.Unix(fields.LastActive, 0).Format(time.RFC1123)
-		assert.Logf("person with name %s (age %d) has been last active at %v", fields.Name, fields.Age, lastActive)
 		return nil
 	})
 	assert.Nil(err)
@@ -178,7 +173,7 @@ func TestOneCriterion(t *testing.T) {
 	defer cleanup()
 
 	// Try to find some documents having an existing "last_active".
-	selector := find.Select(find.RegExp("name", ".*Adam.*"))
+	selector := find.Select(find.RegEx("name", ".*Adam.*"))
 	frs := find.Find(cdb, selector, find.Fields("name", "age", "active"))
 	assert.NotNil(frs)
 	assert.True(frs.IsOK())
@@ -218,7 +213,6 @@ func TestMatches(t *testing.T) {
 		if err := document.Unmarshal(&fields); err != nil {
 			return err
 		}
-		assert.Logf("NAME %v SHIFTS %v", fields.Name, fields.Shifts)
 		assert.Contents(3, fields.Shifts)
 		return nil
 	})
@@ -245,7 +239,6 @@ func TestMatches(t *testing.T) {
 		if err := document.Unmarshal(&fields); err != nil {
 			return err
 		}
-		assert.Logf("NAME %v SHIFTS %v", fields.Name, fields.Shifts)
 		assert.Equal(fields.Shifts, []int{2, 2, 2})
 		return nil
 	})
@@ -278,7 +271,6 @@ type Person struct {
 // prepareFilledDatabase opens the database, deletes a possible test
 // database, creates it newly and adds some data.
 func prepareFilledDatabase(database string, count int, assert audit.Assertion) (couchdb.CouchDB, func()) {
-	logger.SetLevel(logger.LevelDebug)
 	cfgstr := strings.Replace(Cfg, "<<DATABASE>>", database, 1)
 	cfg, err := etc.ReadString(cfgstr)
 	assert.Nil(err)

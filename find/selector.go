@@ -257,8 +257,8 @@ func Modulo(field string, divisor, remainder int) Criterion {
 	return newCriterion(field, "$mod", divisor, remainder)
 }
 
-// RegExp checks if the field matches the given pattern.
-func RegExp(field, pattern string) Criterion {
+// RegEx checks if the field matches the given pattern.
+func RegEx(field, pattern string) Criterion {
 	return newCriterion(field, "$regex", pattern)
 }
 
