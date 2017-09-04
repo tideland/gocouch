@@ -19,6 +19,7 @@ import (
 // CONSTANTS
 //--------------------
 
+// Error codes.
 const (
 	ErrIllegalVersion = iota + 1
 	ErrStartupActionFailed

@@ -7,46 +7,49 @@ databases.
 
 I hope you like it. ;)
 
+[![GitHub release](https://img.shields.io/github/release/tideland/gocouch.svg)](https://github.com/tideland/gocouch)
+[![GitHub license](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://raw.githubusercontent.com/tideland/gocouch/master/LICENSE)
+[![GoDoc](https://godoc.org/github.com/tideland/gocouch?status.svg)](https://godoc.org/github.com/tideland/gocouch)
 [![Sourcegraph](https://sourcegraph.com/github.com/tideland/gocouch/-/badge.svg)](https://sourcegraph.com/github.com/tideland/gocouch?badge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tideland/gocouch)](https://goreportcard.com/report/github.com/tideland/gocouch)
 
 ## Version
 
-Version 1.0.0-beta.2017-04-09
+Version 1.0.0-beta.2017-09-04
 
 ## Packages
 
 #### CouchDB
 
-Package providing the client for the CouchDB.
-
-[![GoDoc](https://godoc.org/github.com/tideland/gocouch/couchdb?status.svg)](https://godoc.org/github.com/tideland/gocouch/couchdb)
+Package `couchdb` is the client for the access of the CouchDB. It provides the
+standard functionality to create databases as well as read, write, and delete
+documents.
 
 #### Views
 
-Views allows to call CouchDB views and retrieve their results.
+Package `views` allows to request CouchDB views. Right now these have to be
+created using the design documents in package `couchdb`. Future releases will
+be able to create, modify, and delete them direct from this package too.
 
-[![GoDoc](https://godoc.org/github.com/tideland/gocouch/views?status.svg)](https://godoc.org/github.com/tideland/gocouch/views)
+#### Find
+
+Package `find` helps to create *Mango* queries the Go way. Typically they have
+a very special JSON notation. Searches will then be executed using the `Find()`
+function. Addtional parameters help to restrict the result set to individual
+fields, to filter the result, or to paginate it.
 
 #### Changes
 
-Changes provides access to changes made documents in a database in time order
-of application.
-
-[![GoDoc](https://godoc.org/github.com/tideland/gocouch/changes?status.svg)](https://godoc.org/github.com/tideland/gocouch/changes)
+Package `changes` allow to retrieve the changes made in a datebase in time order.
 
 #### Security
 
-Management of CouchDB administrators and users for the security of databases. Users
-are authenticated by different request parameters.
-
-[![GoDoc](https://godoc.org/github.com/tideland/gocouch/security?status.svg)](https://godoc.org/github.com/tideland/gocouch/security)
+Package `security` helps with user administration and authentication for CouchDB.
 
 #### Startup
 
-Mechanism for a clean database startup and initialisation including database versioning.
-
-[![GoDoc](https://godoc.org/github.com/tideland/gocouch/startup?status.svg)](https://godoc.org/github.com/tideland/gocouch/startup)
+Package `startup` provides a simple mechanism for a clean startup and maintenance
+of CouchDB databases including database versioning.
 
 ## Contributors
 
