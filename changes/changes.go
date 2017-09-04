@@ -22,21 +22,20 @@ import (
 //--------------------
 
 // Changes returns access to the changes of the database.
-func Changes(cdb couchdb.CouchDB, params ...couchdb.Parameter) ChangesResultSet {
+func Changes(cdb couchdb.CouchDB, params ...couchdb.Parameter) ResultSet {
 	rs := cdb.GetOrPost(cdb.DatabasePath("_changes"), nil, params...)
-	return newChangesResultSet(rs)
+	return newResultSet(rs)
 }
 
 //--------------------
 // CHANGES RESULT SET
 //--------------------
 
-// ChangesProcessingFunc is a function processing the content
-// of a changes row.
-type ChangesProcessingFunc func(id, sequence string, deleted bool, revisions []string, document couchdb.Unmarshable) error
+// Processor is a function processing the content of a changed document.
+type Processor func(id, sequence string, deleted bool, revisions []string, document couchdb.Unmarshable) error
 
-// ChangesResultSet contains the result set of a change.
-type ChangesResultSet interface {
+// ResultSet contains the result set of a change.
+type ResultSet interface {
 	// IsOK checks the status code if the result is okay.
 	IsOK() bool
 
@@ -53,98 +52,98 @@ type ChangesResultSet interface {
 	// query has been limited.
 	Pending() int
 
-	// ResultsLen returns the number of changes.
-	ResultsLen() int
+	// Len returns the number of changes.
+	Len() int
 
-	// ResultsDo iterates over the results of a ChangesResultSet and
+	// Do iterates over the results of a ResultSet and
 	// processes the content.
-	ResultsDo(cpf ChangesProcessingFunc) error
+	Do(process Processor) error
 }
 
-// changesResultSet implements the ChangesResultSet interface.
-type changesResultSet struct {
+// resultSet implements the ResultSet interface.
+type resultSet struct {
 	rs      couchdb.ResultSet
 	changes *couchdbChanges
 }
 
-// newChangesResultSet returns a ChangesResultSet.
-func newChangesResultSet(rs couchdb.ResultSet) ChangesResultSet {
-	crs := &changesResultSet{
+// newResultSet returns a ResultSet.
+func newResultSet(rs couchdb.ResultSet) ResultSet {
+	newRS := &resultSet{
 		rs: rs,
 	}
-	return crs
+	return newRS
 }
 
-// IsOK implements the ChangesResultSet interface.
-func (crs *changesResultSet) IsOK() bool {
-	return crs.rs.IsOK()
+// IsOK implements the ResultSet interface.
+func (rs *resultSet) IsOK() bool {
+	return rs.rs.IsOK()
 }
 
-// StatusCode implements the ChangesResultSet interface.
-func (crs *changesResultSet) StatusCode() int {
-	return crs.rs.StatusCode()
+// StatusCode implements the ResultSet interface.
+func (rs *resultSet) StatusCode() int {
+	return rs.rs.StatusCode()
 }
 
-// Error implements the ChangesResultSet interface.
-func (crs *changesResultSet) Error() error {
-	return crs.rs.Error()
+// Error implements the ResultSet interface.
+func (rs *resultSet) Error() error {
+	return rs.rs.Error()
 }
 
-// LastSequence implements the ChangesResultSet interface.
-func (crs *changesResultSet) LastSequence() string {
-	if err := crs.readChangesResult(); err != nil {
+// LastSequence implements the ResultSet interface.
+func (rs *resultSet) LastSequence() string {
+	if err := rs.readChanges(); err != nil {
 		return ""
 	}
-	return fmt.Sprintf("%v", crs.changes.LastSequence)
+	return fmt.Sprintf("%v", rs.changes.LastSequence)
 }
 
-// Pending implements the ChangesResultSet interface.
-func (crs *changesResultSet) Pending() int {
-	if err := crs.readChangesResult(); err != nil {
+// Pending implements the ResultSet interface.
+func (rs *resultSet) Pending() int {
+	if err := rs.readChanges(); err != nil {
 		return -1
 	}
-	return crs.changes.Pending
+	return rs.changes.Pending
 }
 
-// ResultsLen implements the ChangesResultSet interface.
-func (crs *changesResultSet) ResultsLen() int {
-	if err := crs.readChangesResult(); err != nil {
+// Len implements the ResultSet interface.
+func (rs *resultSet) Len() int {
+	if err := rs.readChanges(); err != nil {
 		return -1
 	}
-	return len(crs.changes.Results)
+	return len(rs.changes.Results)
 }
 
-// ResultsDo implements the ChangesResultSet interface.
-func (crs *changesResultSet) ResultsDo(cpf ChangesProcessingFunc) error {
-	if err := crs.readChangesResult(); err != nil {
+// Do implements the ResultSet interface.
+func (rs *resultSet) Do(process Processor) error {
+	if err := rs.readChanges(); err != nil {
 		return err
 	}
-	for _, result := range crs.changes.Results {
+	for _, result := range rs.changes.Results {
 		revisions := []string{}
 		for _, change := range result.Changes {
 			revisions = append(revisions, change.Revision)
 		}
 		seq := fmt.Sprintf("%v", result.Sequence)
 		doc := couchdb.NewUnmarshableJSON(result.Document)
-		if err := cpf(result.ID, seq, result.Deleted, revisions, doc); err != nil {
+		if err := process(result.ID, seq, result.Deleted, revisions, doc); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// readChangesResult lazily reads the viewResultSet result.
-func (crs *changesResultSet) readChangesResult() error {
-	if !crs.IsOK() {
-		return crs.Error()
+// readChanges lazily reads the changes out of the CouchDB result set.
+func (rs *resultSet) readChanges() error {
+	if !rs.IsOK() {
+		return rs.Error()
 	}
-	if crs.changes == nil {
+	if rs.changes == nil {
 		changes := couchdbChanges{}
-		err := crs.rs.Document(&changes)
+		err := rs.rs.Document(&changes)
 		if err != nil {
 			return err
 		}
-		crs.changes = &changes
+		rs.changes = &changes
 	}
 	return nil
 }

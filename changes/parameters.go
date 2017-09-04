@@ -65,7 +65,7 @@ func Style(style string) couchdb.Parameter {
 	}
 }
 
-// FilterDecomentIDs sets a filtering of the changes to the
+// FilterDocumentIDs sets a filtering of the changes to the
 // given document identifiers.
 func FilterDocumentIDs(documentIDs ...string) couchdb.Parameter {
 	update := func(doc interface{}) interface{} {
