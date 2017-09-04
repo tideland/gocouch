@@ -85,6 +85,7 @@ func TestCreateDeleteDatabase(t *testing.T) {
 
 	// Create and check existence,
 	resp := cdb.CreateDatabase()
+	assert.Nil(resp.Error())
 	assert.True(resp.IsOK())
 	has, err = cdb.HasDatabase()
 	assert.Nil(err)
@@ -445,6 +446,7 @@ func prepareFilledDatabase(database string, assert audit.Assertion) (couchdb.Cou
 	assert.Nil(err)
 	rs := cdb.DeleteDatabase()
 	rs = cdb.CreateDatabase()
+	assert.Nil(rs.Error())
 	assert.True(rs.IsOK())
 
 	gen := audit.NewGenerator(audit.FixedRand())
