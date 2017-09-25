@@ -1,57 +1,31 @@
 # Tideland Go CouchDB Client
 
-## 2017-01-12
+## Version 0.7.0 (2017-09-04)
 
-- Made view key parameters typing more flexible 
-- View result set now also returns number of returned rows
-- Added configuration option for debug logging of requests
+- Added find
 
-## 2016-12-27
+## Version 0.6.0 (2017-04-08)
 
-- Added helper to create configurations
+- Migrated views into an own package
 
-## 2016-12-26
+## Version 0.5.0 (2017-04-06)
 
-- Optimized retrieval of *id* and *revision*
+- Added access to changes
 
-## 2016-12-24
+## Version 0.4.0 (2016-12-24)
 
-- Added *security* package for administrator and user management
-- User authentication via basic authentication or session cookies as parameters
-- Database security via `/{db}/_security` document
+- Added security
 
-## 2016-12-01
+## Version 0.3.0 (2016-11-29)
 
-- Added parameters *skip* and *limit* for views
+- Added startup for versioned databases
+- Improved design documents
 
-## 2016-11-30
+## Version 0.2.0 (2016-11-24)
 
-- Larger renamings for more consistent naming
-- *View* is now an own type
-
-## 2016-11-27
-
-- Made parameters more beautiful
-- Started better design implementation
-
-## 2016-11-25
-
-- Added *startup* package for database creation and
-  maintenance
-
-## 2016-11-24
-
+- Added views
 - Added CRUD for design documents
 
-## 2016-11-23
+## Version 0.1.0 (2016-11-21)
 
-- Edit *OpenPath()* to retrieve the nested configuration for
-  opening the database
-
-## 2016-11-22
-
-- Extended with bulk, design document, and view requests
-
-## 2016-11-21
-
-- Initial *alpha* with CRUD functionality
+- Initial version with CRUD for documents
