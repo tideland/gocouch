@@ -46,6 +46,22 @@ func TestNoConfig(t *testing.T) {
 	assert.Nil(cdb)
 }
 
+// TestVersion tests the retrieving of the DBMS version.
+func TestVersion(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+
+	cfg, err := couchdb.Configure("localhost", 5984, "tgocouch-testing-temporary")
+	assert.Nil(err)
+
+	// Open the database to retrieve the DBMS version.
+	cdb, err := couchdb.Open(cfg)
+	assert.Nil(err)
+	vsn, err := cdb.Version()
+	assert.Nil(err)
+
+	assert.Logf("CouchDB version %v", vsn)
+}
+
 // TestAllDatabases tests the retrieving of all databases.
 func TestAllDatabases(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)
