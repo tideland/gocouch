@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - Unit Tests
+// Tideland GoCouch - CouchDB - Unit Tests
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //

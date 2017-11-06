@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - Document Types
+// Tideland GoCouch - CouchDB - Document Types
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //

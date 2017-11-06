@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - Errors
+// Tideland GoCouch - CouchDB - Errors
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
