@@ -1,5 +1,9 @@
 # Tideland GoCouch
 
+## Version 0.7.1 (2017-11-xx)
+
+- Added `Version()` to `CouchDB`
+
 ## Version 0.7.0 (2017-09-04)
 
 - Added package `find`
