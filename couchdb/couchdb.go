@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB
+// Tideland GoCouch - CouchDB
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
@@ -20,6 +20,7 @@ import (
 	"github.com/tideland/golib/errors"
 	"github.com/tideland/golib/etc"
 	"github.com/tideland/golib/identifier"
+	"github.com/tideland/golib/version"
 )
 
 //--------------------
@@ -54,6 +55,9 @@ type CouchDB interface {
 	// or by one of the parameters. Several of the CouchDB commands
 	// work this way.
 	GetOrPost(path string, doc interface{}, params ...Parameter) ResultSet
+
+	// Version returns the version number of the database instance.
+	Version() (version.Version, error)
 
 	// AllDatabases returns a list of all database IDs
 	// of the connected server.
@@ -196,6 +200,24 @@ func (cdb *couchdb) GetOrPost(path string, doc interface{}, params ...Parameter)
 		rs = req.get()
 	}
 	return rs
+}
+
+// Version implements the CouchDB interface.
+func (cdb *couchdb) Version() (version.Version, error) {
+	rs := cdb.Get("/", nil)
+	if !rs.IsOK() {
+		return nil, rs.Error()
+	}
+	welcome := map[string]interface{}{}
+	err := rs.Document(&welcome)
+	if err != nil {
+		return nil, err
+	}
+	vsnstr, ok := welcome["version"].(string)
+	if !ok {
+		return nil, errors.New(ErrInvalidVersion, errorMessages, welcome["version"])
+	}
+	return version.Parse(vsnstr)
 }
 
 // AllDatabases implements the CouchDB interface.

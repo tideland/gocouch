@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - RessultSet
+// Tideland GoCouch - CouchDB - RessultSet
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //

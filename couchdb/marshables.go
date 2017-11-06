@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - Marshables
+// Tideland GoCouch - CouchDB - Marshables
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //

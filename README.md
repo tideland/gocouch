@@ -1,9 +1,9 @@
-# Tideland Go CouchDB Client
+# Tideland GoCouch
 
 ## Description
 
-The *Tideland Go CouchDB Client* provides convenient access to CouchDB
-databases.
+*Tideland GoCouch* provides a convenient and powerful access to
+CouchDB databases.
 
 I hope you like it. ;)
 
@@ -15,45 +15,45 @@ I hope you like it. ;)
 
 ## Version
 
-Version 0.7.0
+Version 0.7.1
 
 ## Packages
 
-#### CouchDB
+### CouchDB
 
 Package `couchdb` is the client for the access of the CouchDB. It provides the
 standard functionality to create databases as well as read, write, and delete
 documents.
 
-#### Views
+### Views
 
 Package `views` allows to request CouchDB views. Right now these have to be
 created using the design documents in package `couchdb`. Future releases will
 be able to create, modify, and delete them direct from this package too.
 
-#### Find
+### Find
 
 Package `find` helps to create *Mango* queries the Go way. Typically they have
 a very special JSON notation. Searches will then be executed using the `Find()`
 function. Addtional parameters help to restrict the result set to individual
 fields, to filter the result, or to paginate it.
 
-#### Changes
+### Changes
 
 Package `changes` allow to retrieve the changes made in a datebase in time order.
 
-#### Security
+### Security
 
 Package `security` helps with user administration and authentication for CouchDB.
 
-#### Startup
+### Startup
 
 Package `startup` provides a simple mechanism for a clean startup and maintenance
 of CouchDB databases including database versioning.
 
 ## Contributors
 
-- Frank Mueller (https://github.com/TheMue / https://github.com/tideland)
+- Frank Mueller (https://github.com/themue / https://github.com/tideland)
 
 ## License
 

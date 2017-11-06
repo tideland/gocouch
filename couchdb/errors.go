@@ -1,4 +1,4 @@
-// Tideland Go CouchDB Client - CouchDB - Errors
+// Tideland GoCouch - CouchDB - Errors
 //
 // Copyright (C) 2016-2017 Frank Mueller / Tideland / Oldenburg / Germany
 //
@@ -22,6 +22,7 @@ import (
 // Error codes.
 const (
 	ErrNoConfiguration = iota + 1
+	ErrInvalidVersion
 	ErrInvalidDocument
 	ErrNoIdentifier
 	ErrNotFound
@@ -37,6 +38,7 @@ const (
 // Error messages.
 var errorMessages = errors.Messages{
 	ErrNoConfiguration:     "cannot open database without configuration",
+	ErrInvalidVersion:      "CouchDB returns no or invalid version: '%v'",
 	ErrInvalidDocument:     "document needs _id and _rev",
 	ErrNoIdentifier:        "document contains no identifier",
 	ErrNotFound:            "document with identifier '%s' not found",
