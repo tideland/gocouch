@@ -1,8 +1,9 @@
 # Tideland GoCouch
 
-## Version 0.7.1 (2017-11-xx)
+## Version 0.7.1 (2017-11-07)
 
 - Added `Version()` to `CouchDB`
+- Improved mapping of errors to status codes in `ResultSet`
 
 ## Version 0.7.0 (2017-09-04)
 
