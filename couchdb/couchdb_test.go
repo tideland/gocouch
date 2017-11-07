@@ -46,6 +46,23 @@ func TestNoConfig(t *testing.T) {
 	assert.Nil(cdb)
 }
 
+// TestInvalidConfiguration tests opening the database with an invalid
+//  configuration.
+func TestInvalidConfiguration(t *testing.T) {
+	assert := audit.NewTestingAssertion(t, true)
+
+	// Open with illegal configuration is okay as there's
+	// so far now access to the database.
+	cfg, err := couchdb.Configure("some-non-existing-host", 12345, "dont-care")
+	assert.Nil(err)
+	cdb, err := couchdb.Open(cfg)
+	assert.Nil(err)
+
+	// Deleting the database has to fail.
+	resp := cdb.DeleteDatabase()
+	assert.Equal(resp.StatusCode(), couchdb.StatusBadRequest)
+}
+
 // TestVersion tests the retrieving of the DBMS version.
 func TestVersion(t *testing.T) {
 	assert := audit.NewTestingAssertion(t, true)

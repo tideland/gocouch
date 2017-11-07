@@ -100,10 +100,16 @@ func newResultSet(resp *http.Response, err error) *resultSet {
 		statusCode: 200,
 		err:        err,
 	}
-	if err != nil && errors.IsError(err, ErrNotFound) {
+	switch {
+	case err != nil && errors.IsError(err, ErrNotFound):
 		rs.statusCode = StatusNotFound
-	}
-	if resp != nil {
+	case err != nil && errors.IsError(err, ErrNoIdentifier):
+		rs.statusCode = StatusBadRequest
+	case err != nil && errors.IsError(err, ErrPerformingRequest):
+		rs.statusCode = StatusBadRequest
+	case err != nil:
+		rs.statusCode = StatusInternalServerError
+	case resp != nil:
 		// Get status code.
 		rs.statusCode = resp.StatusCode
 		// Read body.
